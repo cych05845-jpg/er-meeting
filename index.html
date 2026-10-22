@@ -167,6 +167,31 @@ td.item{min-width:220px}
 #qrModal .qrbox{padding:16px}
 #qrModal .url{font-size:15px;color:var(--fg-2);overflow-wrap:anywhere}
 .empty{padding:22px;text-align:center;color:var(--fg-3)}
+.btn.sm{padding:3px 12px;font-size:13.5px}
+.btn.danger{color:var(--accent);border-color:var(--accent-soft)}
+.edit-box{background:var(--bg);border-radius:12px;padding:12px 14px;margin-top:8px}
+details.mgr{margin-top:12px;border-top:1px dashed var(--line);padding-top:8px}
+details.mgr summary{cursor:pointer;color:var(--fg-3);font-size:14px}
+tr.overdue td{background:var(--accent-soft)}
+.ver{display:flex;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line);font-size:14.5px;flex-wrap:wrap}
+.ver:first-child{border-top:none}
+.readbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--ok-soft);color:var(--ok);border-radius:12px;padding:12px 16px}
+.att-no{font-weight:700;color:var(--ink-2);white-space:nowrap}
+.addbox{background:var(--bg);border-radius:12px;padding:12px 14px}
+.kiosk{display:flex;flex-direction:column;gap:14px}
+.kin{font-size:34px;padding:14px 18px;text-align:center;letter-spacing:.12em;font-variant-numeric:tabular-nums;border-width:2px;border-color:var(--ink-2)}
+.kmsg{min-height:78px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;text-align:center;padding:12px;background:var(--bg);color:var(--fg-3)}
+.kmsg.ok{background:var(--teal-soft);color:var(--teal)}
+.kmsg.bad{background:var(--accent-soft);color:var(--accent)}
+.kmsg.warn{background:var(--warn-soft);color:var(--warn)}
+#k_reader{max-width:420px;width:100%;margin:0 auto;border-radius:12px;overflow:hidden}
+.alist{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.alist .p{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:14.5px;min-width:0}
+.alist .p .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.alist .p.leave{background:var(--bg);color:var(--fg-3)}
+.alist .p button{border:none;background:none;color:var(--fg-3);cursor:pointer;padding:0 2px;font-size:16px}
+.bigpoll .poll h2{font-size:24px}
+.bigpoll .vote-btns .btn{font-size:20px;padding:18px}
 @media (max-width:560px){.statbar{grid-template-columns:repeat(2,minmax(0,1fr))}.hero h1{font-size:25px}.who span{display:none}}
 @media (prefers-reduced-motion:reduce){.mcard,.bar i{transition:none}}
 </style>
@@ -183,8 +208,8 @@ td.item{min-width:220px}
 </div></header>
 <main class="wrap" id="app"></main>
 <div id="qrModal" hidden role="dialog" aria-modal="true" aria-labelledby="qrTitle">
-  <div class="panel"><div class="eyebrow">教學資源</div><h1 id="qrTitle" style="font-size:26px">ER-Learn 急診學習網</h1>
-    <p class="muted" style="margin:0">用手機相機掃描即可開啟，適合課堂與示範時投影</p>
+  <div class="panel"><div class="eyebrow" id="qrEye">教學資源</div><h1 id="qrTitle" style="font-size:26px">ER-Learn 急診學習網</h1>
+    <p class="muted" style="margin:0" id="qrDesc">用手機相機掃描即可開啟，適合課堂與示範時投影</p>
     <div class="qrbox" id="qrBig"></div>
     <div class="url" id="qrUrl"></div>
     <div class="row" style="justify-content:center"><a class="btn primary" id="qrOpen" target="_blank" rel="noopener">開啟網站</a><button class="btn" type="button" id="qrCopy">複製連結</button><button class="btn" type="button" id="qrFs">全螢幕投影</button><button class="btn" type="button" id="qrClose">關閉</button></div>
@@ -199,8 +224,18 @@ td.item{min-width:220px}
 const CONFIG = {
   API_URL: 'https://script.google.com/macros/s/AKfycbx8HViEQEVPnJhGWogNhtGeFMc8N8So9p8FkpBivf6VBHo4StmLR8VrxZZwAdzPhb34wQ/exec',   // 本系統 GAS 網址；留空＝示範模式
   AUTH: 'simple',      // 'simple'＝本網站簡易登入；帳號中心接好後改成 'center'（系統代碼 meeting）
-  LEARN_URL: 'https://cych05845-jpg.github.io/er-learn/'   // ER-Learn 網址，請確認
+  LEARN_URL: 'https://cych05845-jpg.github.io/er-learn/',  // ER-Learn 網址，請確認
+  BOARD_URL: 'https://cych05845-jpg.github.io/ed-board/',   // 急診必看板
+  SIGNOFF: 'board'     // 會議紀錄已讀簽閱放哪裡：'board'＝必看板（建議，評鑑佐證集中一處）；'site'＝本網站自己的簽閱按鈕
 };
+const BOARD_CAT = {'行政':'行政','品管':'品管','教研':'教學','課程':'教學','單位活動':'會議','其他':'會議'};
+function toBoard(o){ window.open(CONFIG.BOARD_URL + '#publish=' + encodeURIComponent(JSON.stringify(o)), '_blank', 'noopener'); }
+function annToBoard(a){
+  const d = String(a.event_date||'').slice(0,10);
+  toBoard({ title:a.title, category:BOARD_CAT[a.category]||'會議', priority:a.pinned==='yes'?'urgent':'normal',
+    content:[d?'日期：'+d:'', a.body||'', '', '（來源：急診會議整合資料 '+(a.meeting_id||'')+' 會議宣導）'].filter((x,i)=>x||i>1).join('\n').trim(),
+    display_days: 7, read_validity_days: 14 });
+}
 
 const $ = s => document.querySelector(s);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -216,6 +251,9 @@ const store = { get(k){try{return JSON.parse(localStorage.getItem(k))}catch(_){r
 let session = null;
 const CENTER = () => CONFIG.AUTH === 'center' && window.EDAuth;
 const WD = '日一二三四五六';
+const todayStr = () => { const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10); };
+const isOverdue = d => d.status!=='已完成' && d.due && String(d.due) < todayStr();
+const daysLate = d => Math.round((new Date(todayStr()) - new Date(String(d.due).slice(0,10))) / 864e5);
 function dateTile(d){
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d||'');
   if(!m) return `<div class="date none" aria-hidden="true"><div class="m">公告</div><div class="d">・</div><div class="w">&nbsp;</div></div>`;
@@ -269,12 +307,14 @@ const M = {
     {dec_id:'D2',meeting_id:'2026-10',item:'躁動病人移除留置針：先評估皮膚、確實固定、說明後執行、拔針後確認',owner:'[__]',due:'',status:'已完成',note:'已於急診案例討論及交班宣導'},
     {dec_id:'D3',meeting_id:'2026-10',item:'決定下半年度關懷活動對象（育幼院／晨光）',owner:'翁秀霞 護理長',due:'',status:'未開始',note:'見本月投票'},
     {dec_id:'D4',meeting_id:'2026-10',item:'單位品質改善案書面報告（進度至「專案完成」）',owner:'[__]',due:'2026-12-31',status:'進行中',note:''},
-    {dec_id:'D5',meeting_id:'2026-08',item:'儀器定位：資訊室安裝網點',owner:'[__]',due:'',status:'持續追蹤',note:''}
+    {dec_id:'D5',meeting_id:'2026-08',item:'儀器定位：資訊室安裝網點',owner:'[__]',due:'2026-09-30',status:'持續追蹤',note:''}
   ],
   proposals:[
     {prop_id:'R1',title:'（示範）提議範例：交班前宣讀當日必看事項',body:'這是示範用的提議，正式版會顯示同仁提出的內容。',category:'流程改善',proposer:'不具名',status:'待審閱',meeting_id:'',reply:'',created_at:'2026-10-20',seconds:3,seconded:false}
   ],
-  minutes:{},
+  minutes:{}, log:[], reads:{},
+  attendance:[{key:'k1',meeting_id:'2026-10',staff_id:'5845',name:'翁秀霞',title:'護理長',status:'出席',method:'自行簽到',time:'14:02'},{key:'k2',meeting_id:'2026-10',staff_id:'10002',name:'示範同仁乙',title:'護理師',status:'請假',method:'手動輸入',time:'13:50'}],
+  dir:{'10001':['示範同仁甲','護理師'],'10002':['示範同仁乙','護理師'],'10003':['示範同仁丙','專科護理師'],'5845':['翁秀霞','護理長']},
   polls:[{poll_id:'P1',meeting_id:'2026-10',question:'下半年度關懷活動對象',options:['育幼院','晨光'],close_at:'2026-11-15',open:true,voted:false,total:0,_votes:[0,0]}]
 };
 async function mock(action, b){
@@ -283,7 +323,30 @@ async function mock(action, b){
   switch(action){
     case 'listMeetings': return M.meetings.map(m=>({...m,n_files:M.attachments.filter(a=>a.meeting_id===m.meeting_id).length,n_open:M.decisions.filter(d=>d.meeting_id===m.meeting_id&&d.status!=='已完成').length,n_polls_open:M.polls.filter(p=>p.meeting_id===m.meeting_id&&p.open).length})).sort((a,b)=>b.meeting_id.localeCompare(a.meeting_id));
     case 'getMeeting': { const m=M.meetings.find(x=>x.meeting_id===b.meeting_id); if(!m) throw new Error('找不到這次會議');
-      return {meeting:m,attachments:M.attachments.filter(a=>a.meeting_id===m.meeting_id),decisions:M.decisions.filter(d=>d.meeting_id===m.meeting_id),polls:M.polls.filter(p=>p.meeting_id===m.meeting_id).map(pv)}; }
+      return {meeting:m,attachments:M.attachments.filter(a=>a.meeting_id===m.meeting_id),decisions:M.decisions.filter(d=>d.meeting_id===m.meeting_id),polls:M.polls.filter(p=>p.meeting_id===m.meeting_id).map(pv),can_scribe:true,today:true,minutes_published:M.minutes[m.meeting_id]?.status==='published',me_read:!!M.reads[m.meeting_id],me_present:M.attendance.some(a=>a.meeting_id===m.meeting_id&&a.staff_id===session.staff_id&&a.status==='出席')}; }
+    case 'updatePoll': { const p=M.polls.find(x=>x.poll_id===b.poll_id); const x=b.poll; if(x.question) p.question=x.question; if(x.close_at!=null) p.close_at=x.close_at; if(x.status) p.open=x.status==='open';
+      if(x.options){ const o=x.options.map(s=>s.trim()).filter(Boolean); if(p.total&&o.join()!==p.options.join()) throw new Error('已經有人投票，不能再改選項'); p.options=o; p._votes=o.map((_,i)=>p._votes[i]||0); } return pv(p); }
+    case 'deletePoll': M.polls=M.polls.filter(x=>x.poll_id!==b.poll_id); return true;
+    case 'deleteDecision': M.decisions=M.decisions.filter(x=>x.dec_id!==b.dec_id); return true;
+    case 'reopenMinutes': M.minutes[b.meeting_id].status='draft'; M.log.push({log_id:'V'+Date.now(),meeting_id:b.meeting_id,action:'退回草稿',by:session.name,at:new Date().toISOString(),body:M.minutes[b.meeting_id].body}); return {can_edit:true,minutes:M.minutes[b.meeting_id]};
+    case 'listMinutesLog': return M.log.filter(v=>v.meeting_id===b.meeting_id).map(v=>({...v,size:(v.body||'').length})).reverse();
+    case 'getMinutesVersion': { const v=M.log.find(x=>x.log_id===b.log_id); return {...v,header:{},followups:[]}; }
+    case 'confirmRead': M.reads[b.meeting_id]=true; return true;
+    case 'listReads': return {reads:M.reads[b.meeting_id]?[{name:session.name,at:'2026-10-23 09:10'}]:[],n_present:M.attendance.filter(a=>a.meeting_id===b.meeting_id&&a.status==='出席').length,pending:[{name:'示範同仁乙'},{name:'示範同仁丁'}],has_dir:true};
+    case 'listAttendance': { const l=M.attendance.filter(a=>a.meeting_id===b.meeting_id); const me=l.find(a=>a.staff_id===session.staff_id);
+      return {can_edit:true,today:true,me:me?me.status:'',n_present:l.filter(a=>a.status==='出席').length,n_leave:l.filter(a=>a.status==='請假').length,list:l}; }
+    case 'checkin': { const t=new Date().toTimeString().slice(0,5); let p;
+      if(!b.staff_id&&!b.name) p={staff_id:session.staff_id,name:session.name,title:''};
+      else if(b.staff_id){ const id=String(b.staff_id).replace(/^0+/,''); const d=M.dir[id]; if(!d) throw new Error('查無員編 '+id); p={staff_id:id,name:d[0],title:d[1]}; }
+      else p={staff_id:'',name:b.name,title:''};
+      const key=b.meeting_id+'|'+(p.staff_id||'N:'+p.name); const old=M.attendance.find(a=>a.key===key); const st=b.status==='請假'?'請假':'出席';
+      if(old){ const already=old.status===st; Object.assign(old,{status:st,time:t}); return {...p,status:st,already}; }
+      M.attendance.push({key,meeting_id:b.meeting_id,...p,status:st,method:b.method||'自行簽到',time:t}); return {...p,status:st,already:false}; }
+    case 'removeAttendance': M.attendance=M.attendance.filter(a=>a.key!==b.key); return true;
+    case 'checkinBatch': b.people.filter(x=>x.status!=='未到').forEach(x=>M.attendance.push({key:'b'+Math.random(),meeting_id:b.meeting_id,staff_id:x.staff_id,name:x.name,title:x.unit,status:x.status,method:'簽到表照片',time:'14:00'})); return mock('listAttendance',b);
+    case 'readSignSheet': return [{unit:'ER',name:'示範同仁甲',status:'出席',staff_id:'10001'},{unit:'ER',name:'示範同仁丙',status:'出席',staff_id:'10003'},{unit:'ER',name:'林?華',status:'請假',staff_id:''},{unit:'ER',name:'示範同仁丁',status:'未到',staff_id:''}];
+    case 'addLink': { if(!/^https:\/\//.test(b.url)) throw new Error('請貼上 https:// 開頭的網址'); const a={att_id:'A'+Date.now(),meeting_id:b.meeting_id,name:b.name||b.url,mime:'text/uri-list',kind:'附件',url:b.url}; M.attachments.push(a); return a; }
+    case 'deleteFile': M.attachments=M.attachments.filter(a=>a.att_id!==b.att_id); return true;
     case 'getFile': { const a=M.attachments.find(x=>x.att_id===b.att_id); if(!a?.demo_url) throw new Error('示範模式沒有這個檔案，正式版會從雲端硬碟讀取');
       return {name:a.name,mime:a.mime,text:await (await fetch(a.demo_url)).text()}; }
     case 'listDecisions': return [...M.decisions].sort((a,b)=>b.meeting_id.localeCompare(a.meeting_id));
@@ -301,13 +364,59 @@ async function mock(action, b){
     case 'uploadFile': throw new Error('示範模式不能上傳，部署後即可使用');
     case 'vote': { const p=M.polls.find(x=>x.poll_id===b.poll_id); if(p.voted) throw new Error('您已投過票'); p._votes[p.options.indexOf(b.option)]++; p.total++; p.voted=true; return pv(p); }
     case 'getMinutes': return {can_edit:true, minutes:M.minutes[b.meeting_id]||null};
-    case 'saveMinutes': M.minutes[b.meeting_id]={...(M.minutes[b.meeting_id]||{status:'draft'}),...b.minutes}; return {can_edit:true,minutes:M.minutes[b.meeting_id]};
+    case 'saveMinutes': M.minutes[b.meeting_id]={...(M.minutes[b.meeting_id]||{status:'draft'}),...b.minutes}; M.log.push({log_id:'V'+Date.now(),meeting_id:b.meeting_id,action:b.restore_of?'還原 '+b.restore_of:'儲存草稿',by:session.name,at:new Date().toISOString(),body:b.minutes.body}); return {can_edit:true,minutes:M.minutes[b.meeting_id]};
     case 'uploadAudio': throw new Error('示範模式不能上傳錄音，可改用「貼上筆記」試試');
-    case 'summarize': { await new Promise(r=>setTimeout(r,900));
+    case 'summarize': if (b.source==='data') { await new Promise(r=>setTimeout(r,900));
+      M.minutes[b.meeting_id]={header:b.header,status:'draft',followups:[{item:'下半年度關懷活動對象依投票結果辦理',owner:'翁秀霞 護理長',due:'2026-11-15'},{item:'8/6 病人辨識案例納入單位案例教育',owner:'〔待補〕',due:''},{item:'單位品質改善案書面報告',owner:'〔待補〕',due:'2026-12-31'}],
+        body:`（示範：沒有錄音和筆記時，AI 依會議資料產生的草稿）
+一、上次會議追蹤
+議題1.儀器定位：資訊室安裝網點
+決議執行情形：持續追蹤。
+
+二、本次會議報告事項
+1.護理長報告
+ (1)9月業務量與同儕比較（附件一）
+ 說明：9月業務量回升並居嘉義第一。
+ 討論：〔會中討論待補〕
+ 決議：〔待補〕
+ (2)品質指標
+ 說明：24/48小時留置、72小時返診未達標；內科ICU滿床致轉ICU延遲22件（附件二）。
+ 討論：〔會中討論待補〕
+ 決議：〔待補〕
+ (3)異常事件：8/6 病人辨識（跡近錯失）
+ 說明：以臨床情境推論指認病人，CT檢查單送錯人，CT室執行前核對攔截，未造成傷害。
+ 討論：〔會中討論待補〕
+ 決議：檢查單交付前落實「姓名＋病歷號」雙重辨識，本案納入單位案例教育。
+ (4)顧客反應：DAMA 移除留置針致皮膚撕裂
+ 說明：68歲女性躁動掙扎中移除敷料，施針處及固定部位皮膚撕裂。
+ 討論：〔會中討論待補〕
+ 決議：躁動病人移除留置針四個關鍵動作：先評估、穩固定、說清楚再執行、拔針後確認；已於案例討論及交班宣導。
+ (5)10月護理長會議宣導：感恩週活動（11/24 茶會、11/26 蛋糕）、品質改善案書面報告 12/31 截止、11/16 病安訪查等。
+2.各組報告：無
+
+三、討論事項
+案由1.下半年度關懷活動對象（提案人：護理長）
+ 說明：育幼院或晨光二選一。
+ 討論：〔會中討論待補〕
+ 決議：投票進行中，依 11/15 截止後結果辦理。
+
+四、臨時動議
+〔待補〕
+
+五、宣讀、確認會議紀錄
+
+六、本次會議追蹤事項
+(1)關懷活動對象依投票結果辦理（負責人：翁秀霞 護理長）
+(2)8/6 案例納入單位案例教育（負責人：〔待補〕）
+(3)單位品質改善案書面報告 12/31 前繳交（負責人：〔待補〕）
+
+七、散會：${b.header?.end||'〔　：　〕'}`};
+      return {can_edit:true,minutes:M.minutes[b.meeting_id]}; }
+    else { await new Promise(r=>setTimeout(r,900));
       M.minutes[b.meeting_id]={header:b.header,status:'draft',followups:[{item:'下半年度關懷活動對象依投票結果辦理',owner:'[__]',due:''},{item:'8/6 病人辨識案例納入單位案例教育',owner:'[__]',due:''}],
         body:`（示範：AI 依筆記產生的草稿格式）\n一、上次會議追蹤\n議題1.儀器定位系統安裝網點\n決議：資訊室安裝中，持續追蹤。\n\n二、本次會議報告事項\n1.護理長報告\n (1)9月業務量：急診服務量7,312人次，較去年同期增加4.4%，居嘉義第一。\n (2)品質指標：24小時與48小時留置、72小時返診未達標；轉ICU超過6小時22件，主因內科ICU滿床。\n (3)異常事件報告：\n 說明：8/6 病人A檢查單誤置，CT室執行前核對攔截（跡近錯失）。\n 討論：甲員：〔依筆記內容〕\n 決議：檢查單交付前落實姓名＋病歷號雙重辨識，納入單位案例教育。\n2.各組報告：無\n3.本次討論事項\n議題1.下半年度關懷活動對象（提案人：護理長）\n 說明：育幼院或晨光二選一。\n 討論：〔依筆記內容〕\n 決議：依網站投票結果辦理。\n4.「病人照顧需求」問題討論：無\n5.臨時動議：無\n\n下次會議追蹤事項\n1.關懷活動依投票結果辦理（負責人：〔待填〕）`};
       return {can_edit:true,minutes:M.minutes[b.meeting_id]}; }
-    case 'approveMinutes': { const mi=M.minutes[b.meeting_id]; mi.status='published'; (b.add_followups||[]).forEach(f=>M.decisions.push({dec_id:'D'+Math.random(),meeting_id:b.meeting_id,...f,status:'未開始',note:''})); return {can_edit:true,minutes:mi}; }
+    case 'approveMinutes': { const mi=M.minutes[b.meeting_id]; mi.status='published'; M.log.push({log_id:'V'+Date.now()+1,meeting_id:b.meeting_id,action:'核定公開',by:session.name,at:new Date().toISOString(),body:mi.body}); (b.add_followups||[]).forEach(f=>M.decisions.push({dec_id:'D'+Math.random(),meeting_id:b.meeting_id,...f,status:'未開始',note:''})); return {can_edit:true,minutes:mi}; }
   }
   throw new Error('示範模式不支援 '+action);
 }
@@ -315,12 +424,12 @@ async function mock(action, b){
 /* ===== 路由與外框 ===== */
 const isAdmin = () => ['admin','hn','ahn'].includes(String(session?.role||'').toLowerCase());
 const route = () => (location.hash.replace(/^#\/?/,'')||'home').split('/');
-addEventListener('hashchange', render);
+addEventListener('hashchange', () => { $('#qrModal').hidden = true; render(); });
 let navBadges = {};
 function chrome(){
   const r = route()[0];
   const links = [['home','本月會議'],['news','公告'],['records','會議紀錄'],['polls','投票'],['proposals','提議'],['decisions','決議追蹤']].concat(isAdmin()?[['admin','管理']]:[]);
-  const cur = r==='m' ? 'records' : r;
+  const cur = r==='m'||r==='checkin'||r==='live' ? 'records' : r==='vote' ? 'polls' : r;
   $('#nav').innerHTML = session ? links.map(([k,t])=>`<a href="#/${k}" ${cur===k?'aria-current="page"':''}>${t}${navBadges[k]?`<span class="badge">${navBadges[k]}</span>`:''}</a>`).join('') : '';
   $('#nav').hidden = !session;
   $('#who').innerHTML = session ? `<span>${esc(session.name)}</span>${DEMO?'':`<button type="button" id="chpin">變更 PIN</button>${CENTER()?'<a class="hbtn" style="text-decoration:none" href="/account/">帳號中心</a>':''}`}<button type="button" id="logout">登出</button>` : '';
@@ -328,15 +437,21 @@ function chrome(){
   $('#logout').onclick = () => DEMO ? toast('示範模式不需登出') : logout();
   const cp = $('#chpin'); if (cp) cp.onclick = () => CENTER() ? EDAuth.changePin().then(()=>toast('已變更 PIN')).catch(()=>{}) : (location.hash = '#/pin');
 }
+let scanner = null;
+function stopScanner(){ if (scanner) { try { scanner.stop().catch(()=>{}); } catch(_){} scanner = null; } }
 async function render(){
+  stopScanner();
   chrome();
-  const app = $('#app');
+  const old = $('#app'); const app = old.cloneNode(false); old.replaceWith(app);   // 換頁時換新容器，避免上一頁還在載入的內容蓋過來
   if (!session) return CENTER() ? (app.innerHTML = `<div class="card login stack"><div class="eyebrow">ER MEETING HUB</div><h1>登入急診會議整合資料</h1><p class="muted" style="margin:0">請使用 ED 帳號中心的員工編號與 PIN 登入。</p></div>`) : renderLogin(app);
   if (session.must_change || route()[0]==='pin') return renderPin(app, session.must_change);
   const [r, a] = route();
   app.innerHTML = `<div class="empty">載入中…</div>`;
   try {
     if (r==='m' && a) await renderMeeting(app, a);
+    else if (r==='checkin' && a) await renderCheckin(app, a);
+    else if (r==='live' && a) await renderLive(app, a);
+    else if (r==='vote' && a) await renderVote(app, a);
     else if (r==='news') await renderNews(app);
     else if (r==='records') await renderRecords(app);
     else if (r==='polls') await renderPolls(app);
@@ -388,17 +503,19 @@ async function renderHome(app){
   const openDec = decs.filter(d=>d.status!=='已完成');
   const today = new Date().toISOString().slice(0,10);
   const upcoming = anns.filter(a=>a.pinned==='yes' || !a.event_date || a.event_date>=today).slice(0,5);
+  const needRead = CONFIG.SIGNOFF!=='board' && detail && detail.minutes_published && !detail.me_read && !detail.me_present;
   app.innerHTML = `<div class="stack">${demoBanner()}
+    ${needRead?`<div class="readbar"><span><b>${esc(m.title)}</b> 會議紀錄已公開，您未出席，請閱讀後簽閱。</span><a class="btn primary" href="#/m/${esc(m.meeting_id)}">閱讀並簽閱</a></div>`:''}
     ${m ? `<section class="card hero"><div>
         <div class="eyebrow">本月會議</div><h1>${esc(m.title)}</h1>
         <div class="meta">會議日期 ${esc(m.date)}</div>
-        <div class="facts"><div><b>${anns.length}</b><span>則公告</span></div><div><b>${openPolls.length}</b><span>項投票進行中</span></div><div><b>${openDec.length}</b><span>項決議追蹤中</span></div><div><b>${props.filter(p=>p.status==='待審閱'||p.status==='排入議程').length}</b><span>則提議待處理</span></div></div>
+        <div class="facts"><div><b>${anns.length}</b><span>則公告</span></div><div><b>${openPolls.length}</b><span>項投票進行中</span></div><div><b>${openDec.length}</b><span>項決議追蹤中</span></div>${decs.some(isOverdue)?`<div><b style="color:#FFB59C">${decs.filter(isOverdue).length}</b><span>項決議逾期</span></div>`:''}<div><b>${props.filter(p=>p.status==='待審閱'||p.status==='排入議程').length}</b><span>則提議待處理</span></div></div>
       </div>
       <div class="row">${report?`<button class="btn light big" type="button" data-open="${esc(report.att_id)}">▶ 觀看會議報告</button>`:''}<a class="btn big" style="background:transparent;color:var(--ink-fg);border-color:rgba(255,255,255,.35)" href="#/m/${esc(m.meeting_id)}">會議紀錄與資料</a></div>
     </section>` : `<div class="card empty">還沒有會議資料</div>`}
     <div class="dash">
       <section class="card"><div class="sec-head"><h2>最新公告</h2><a href="#/news">全部公告 →</a></div>
-        <div>${upcoming.map(annItem).join('') || '<div class="empty">目前沒有公告</div>'}</div></section>
+        <div>${upcoming.map(a=>annItem(a)).join('') || '<div class="empty">目前沒有公告</div>'}</div></section>
       <div class="stack">
         <section class="card"><div class="sec-head"><h2>投票</h2><a href="#/polls">全部投票 →</a></div>
           <div id="homePolls">${openPolls.length? openPolls.slice(0,2).map(p=>pollCard(p,true)).join('') : '<div class="empty">目前沒有進行中的投票</div>'}</div></section>
@@ -421,36 +538,66 @@ async function renderHome(app){
 }
 
 /* ===== ER-Learn QR ===== */
-function drawQR(el, size){
+function drawQR(el, size, text){
   if (!el) return;
   el.innerHTML = '';
-  if (window.QRCode) new QRCode(el, {text:CONFIG.LEARN_URL, width:size, height:size, colorDark:'#1E5A64', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M});
+  if (window.QRCode) new QRCode(el, {text:text||CONFIG.LEARN_URL, width:size, height:size, colorDark:'#1E5A64', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M});
   else el.innerHTML = `<div style="width:${size}px;height:${size}px;display:grid;place-items:center;color:#555;font-size:13px;line-height:1.4;padding:8px">QR 載入失敗<br>請用下方連結</div>`;
 }
-function openLearn(){
+let qrCur = CONFIG.LEARN_URL;
+const SITE = () => location.href.split('#')[0];
+function openQR({eyebrow, title, desc, url}){
+  qrCur = url;
+  $('#qrEye').textContent = eyebrow; $('#qrTitle').textContent = title; $('#qrDesc').textContent = desc;
   const m = $('#qrModal'); m.hidden = false;
-  drawQR($('#qrBig'), Math.min(360, window.innerWidth - 120));
-  $('#qrUrl').textContent = CONFIG.LEARN_URL; $('#qrOpen').href = CONFIG.LEARN_URL;
+  drawQR($('#qrBig'), Math.min(360, window.innerWidth - 120), url);
+  $('#qrUrl').textContent = url; $('#qrOpen').href = url;
   $('#qrClose').focus();
 }
+const openLearn = () => openQR({eyebrow:'教學資源', title:'ER-Learn 急診學習網', desc:'用手機相機掃描即可開啟，適合課堂與示範時投影', url:CONFIG.LEARN_URL});
 $('#learnBtn').onclick = openLearn;
 $('#qrClose').onclick = () => { $('#qrModal').hidden = true; if (document.fullscreenElement) document.exitFullscreen().catch(()=>{}); };
 $('#qrModal').addEventListener('click', e => { if (e.target.id === 'qrModal') $('#qrClose').click(); });
-$('#qrCopy').onclick = async () => { try { await navigator.clipboard.writeText(CONFIG.LEARN_URL); toast('已複製連結'); } catch(_) { const r=document.createRange(); r.selectNodeContents($('#qrUrl')); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast('請按 Ctrl+C 複製'); } };
-$('#qrFs').onclick = () => { try { $('#qrModal').requestFullscreen().then(()=>drawQR($('#qrBig'), Math.min(innerHeight, innerWidth) - 260)).catch(()=>{}); } catch(_){} };
+$('#qrCopy').onclick = async () => { try { await navigator.clipboard.writeText(qrCur); toast('已複製連結'); } catch(_) { const r=document.createRange(); r.selectNodeContents($('#qrUrl')); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast('請按 Ctrl+C 複製'); } };
+$('#qrFs').onclick = () => { try { $('#qrModal').requestFullscreen().then(()=>drawQR($('#qrBig'), Math.min(innerHeight, innerWidth) - 260, qrCur)).catch(()=>{}); } catch(_){} };
 
 /* ===== 公告 ===== */
-function annItem(a){
-  return `<div class="ann">${dateTile(a.event_date)}<div style="min-width:0">
+function annItem(a, manage){
+  return `<div class="ann" data-ann="${esc(a.ann_id)}">${dateTile(a.event_date)}<div style="min-width:0">
     <h3>${a.pinned==='yes'?'<span class="pin">置頂</span>':''}${esc(a.title)}${catChip(a.category)}</h3>
-    ${a.body?`<p>${esc(a.body)}</p>`:''}</div></div>`;
+    ${a.body?`<p>${esc(a.body)}</p>`:''}
+    ${manage?`<div class="row" style="margin-top:6px">${a.expires?`<span class="muted small">下架 ${esc(a.expires)}</span>`:''}<button class="btn sm" type="button" data-aboard>發到必看板</button><button class="btn sm" type="button" data-aedit>編輯</button><button class="btn sm danger" type="button" data-adel>刪除</button></div>`:''}</div></div>`;
+}
+function annForm(a){
+  return `<form class="edit-box stack" style="gap:10px"><div class="grid2">
+    <label class="f">類別<select name="category">${ANN_CATS.map(c=>`<option ${c===a.category?'selected':''}>${c}</option>`).join('')}</select></label>
+    <label class="f">活動日期<input name="event_date" type="date" value="${esc(String(a.event_date||'').slice(0,10))}"></label>
+    <label class="f">下架日期<input name="expires" type="date" value="${esc(String(a.expires||'').slice(0,10))}"></label></div>
+    <label class="f">標題<input name="title" required value="${esc(a.title)}"></label>
+    <label class="f">內容<textarea name="body">${esc(a.body||'')}</textarea></label>
+    <div class="row between"><label class="check"><input type="checkbox" name="pinned" ${a.pinned==='yes'?'checked':''}> 置頂</label>
+    <div class="row"><button class="btn" type="button" data-cancel>取消</button><button class="btn primary" type="submit">儲存</button></div></div></form>`;
 }
 async function renderNews(app){
   const anns = await api('listAnnouncements');
   let cat = '全部';
   const draw = () => {
-    const list = anns.filter(a=>cat==='全部'||a.category===cat);
-    $('#annList').innerHTML = list.map(annItem).join('') || '<div class="empty">這個分類沒有公告</div>';
+    const list = anns.filter(a=>cat==='全部'||a.category===cat).sort((a,b)=>((b.pinned==='yes')-(a.pinned==='yes'))||String(a.event_date||'9').localeCompare(String(b.event_date||'9')));
+    $('#annList').innerHTML = list.map(a=>annItem(a, isAdmin())).join('') || '<div class="empty">這個分類沒有公告</div>';
+    $('#annList').querySelectorAll('[data-ann]').forEach(el=>{
+      const a = anns.find(x=>x.ann_id===el.dataset.ann);
+      const ed = el.querySelector('[data-aedit]'); if (!ed) return;
+      el.querySelector('[data-aboard]').onclick = () => annToBoard(a);
+      el.querySelector('[data-adel]').onclick = async () => { if(!confirm('確定刪除公告「'+a.title+'」？')) return;
+        try{ await api('deleteAnnouncement',{ann_id:a.ann_id}); anns.splice(anns.indexOf(a),1); toast('已刪除'); draw(); }catch(e){toast(e.message)} };
+      ed.onclick = () => { const box = el.lastElementChild; box.insertAdjacentHTML('beforeend', annForm(a)); ed.parentElement.hidden = true;
+        const f = box.querySelector('form');
+        f.querySelector('[data-cancel]').onclick = () => draw();
+        f.onsubmit = async e => { e.preventDefault(); const fd = new FormData(f);
+          const n = {...a, category:fd.get('category'), event_date:fd.get('event_date'), expires:fd.get('expires'), title:fd.get('title'), body:fd.get('body'), pinned:!!fd.get('pinned')};
+          try{ await api('saveAnnouncement',{announcement:n}); Object.assign(a, n, {pinned:n.pinned?'yes':''}); toast('已更新公告'); draw(); }catch(err){toast(err.message)} };
+      };
+    });
     app.querySelectorAll('.filters button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.f===cat));
   };
   const cats = ['全部', ...ANN_CATS.filter(c=>anns.some(a=>a.category===c))];
@@ -474,25 +621,33 @@ async function renderRecords(app){
       </a>`).join('')}</div>`).join('') : `<div class="card empty">還沒有會議資料</div>`}</div>`;
 }
 
+let curMeet = null;   // 目前會議（附件編號、出席名單，供會議紀錄與 Word 使用）
+const numberAtts = atts => atts.filter(a=>a.kind!=='簽到表').map((a,i)=>({...a, no:'附件'+cnNum(i+1)}));
+function cnNum(n){ const c='一二三四五六七八九十'; return n<=10?c[n-1]:n<20?'十'+c[n-11]:String(n); }
 async function renderMeeting(app, id){
   const d = await api('getMeeting',{meeting_id:id});
   const m = d.meeting;
+  curMeet = {d, atts:numberAtts(d.attachments), attendance:null};
   const reports = d.attachments.filter(a=>a.kind==='會議報告');
-  const others = d.attachments.filter(a=>a.kind!=='會議報告');
   app.innerHTML = `<div class="stack">${demoBanner()}
     <div><a href="#/records">← 全部會議紀錄</a></div>
     ${pageHead(esc(m.meeting_id.replace('-',' 年 '))+' 月', esc(m.title), isAdmin()
       ? `<form class="row" id="dateForm"><label class="f" for="md_date" style="flex-direction:row;align-items:center;gap:8px">會議日期<input id="md_date" type="date" value="${esc(/^\d{4}-\d{2}-\d{2}$/.test(m.date)?m.date:'')}" style="width:auto"></label><button class="btn" type="submit">儲存日期</button></form>`
       : `<span class="muted">會議日期 ${esc(m.date)}</span>`)}
-    ${reports.map(a=>`<div class="card report-hero"><div><div class="t">${esc(a.name)}</div><div class="muted">在網頁上播放，←／→ 換頁，N 鍵看講者備註</div></div>
+    ${reports.map(a=>`<div class="card report-hero"><div><div class="t">${esc(a.name)}</div><div class="muted">${a.url?'外部連結':'在網頁上播放，←／→ 換頁，N 鍵看講者備註'}</div></div>
       <button class="btn light big" type="button" data-open="${esc(a.att_id)}">▶ 觀看會議報告</button></div>`).join('')}
+    <div class="card row between"><div><h2>會議現場 QR</h2><div class="muted small">投影給全場掃描：同仁用手機登入後可簽到、投票</div></div><button class="btn primary" type="button" id="liveQR">投影現場 QR</button></div>
+    <div class="card stack" id="attend"><h2>出席簽到</h2><div class="muted">載入中…</div></div>
     ${m.summary?`<div class="card"><h2>重點摘要</h2><p style="margin:8px 0 0;color:var(--fg-2)">${esc(m.summary)}</p></div>`:''}
     ${d.polls.map(p=>pollCard(p)).join('')}
     <div class="card stack" id="minutes"><h2>會議紀錄</h2><div class="muted">載入中…</div></div>
     <div class="card"><h2 style="margin-bottom:8px">決議與追蹤事項</h2>${decTable(d.decisions,false)}</div>
-    ${others.length?`<div class="card"><h2>其他資料</h2><div class="files">${others.map(a=>`<div class="file"><span class="chip">${esc(a.kind||'附件')}</span><span class="n">${esc(a.name)}</span><button class="btn" type="button" data-open="${esc(a.att_id)}">開啟</button></div>`).join('')}</div></div>`:''}
+    <div class="card stack" id="atts"></div>
   </div>`;
   app.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openFile(b.dataset.open));
+  $('#liveQR').onclick = () => openQR({eyebrow:'會議現場', title:m.title, desc:'手機掃描 → 登入 → 簽到與投票', url:SITE()+'#/live/'+id});
+  renderAtts(id, d);
+  loadAttend(id, m);
   const df = $('#dateForm');
   if (df) df.onsubmit = async e => { e.preventDefault(); const v=$('#md_date').value; if(!v) return toast('請選擇日期');
     try{ await api('saveMeeting',{meeting:{...m, date:v}}); m.date=v; toast('已更新會議日期'); }catch(err){ toast(err.message); } };
@@ -506,14 +661,27 @@ function pollCard(p, compact){
   const pct = i => p.total ? Math.round(p.counts[i]/p.total*100) : 0;
   return `<div class="${compact?'':'card '}poll" data-poll="${esc(p.poll_id)}">
     <div class="row between"><h2>${esc(p.question)}</h2>
-    <span class="chip ${p.open?'hot':''}">${p.open?'進行中':'已截止'}${p.close_at?'・截止 '+esc(p.close_at):''}</span></div>
+    <div class="row"><span class="chip ${p.open?'hot':''}">${p.open?'進行中':'已截止'}${p.close_at?'・截止 '+esc(p.close_at):''}</span>${p.open?`<button class="btn sm" type="button" data-pollqr data-q="${esc(p.question)}">投票 QR</button>`:''}</div></div>
     <div class="muted small">不記名、一人一票，系統只記錄是否投過，不記錄投給誰。已投 ${p.total} 票${compact?'':'・<a href="#/m/'+esc(p.meeting_id)+'">'+esc(p.meeting_id)+' 會議</a>'}</div>
     ${p.counts ? `<div class="opt">${p.options.map((o,i)=>`<div class="bar ${p.counts[i]===max&&max>0?'win':''}"><i style="width:${pct(i)}%"></i><span><b>${esc(o)}</b><span>${p.counts[i]} 票・${pct(i)}%</span></span></div>`).join('')}</div>${p.voted?'<div class="muted small" style="margin-top:8px">您已投票</div>':''}` : ''}
     ${p.open && !p.voted ? `<div class="vote-btns">${p.options.map(o=>`<button class="btn" type="button" data-vote="${esc(o)}">${esc(o)}</button>`).join('')}</div>` : ''}
+    ${!compact && isAdmin() ? `<details class="mgr"><summary>管理這個投票</summary><form class="stack" style="gap:10px;margin-top:8px" data-pedit>
+      <div class="grid2"><label class="f">題目<input name="question" value="${esc(p.question)}"></label><label class="f">截止日<input name="close_at" type="date" value="${esc(String(p.close_at||'').slice(0,10))}"></label></div>
+      <label class="f">選項（一行一個）${p.total?'<span class="muted small">已有人投票，選項不能修改</span>':''}<textarea name="options" ${p.total?'disabled':''}>${esc(p.options.join('\n'))}</textarea></label>
+      <div class="row"><button class="btn primary sm" type="submit">儲存</button><button class="btn sm" type="button" data-pstat="${p.open?'closed':'open'}">${p.open?'提前截止':'重新開放'}</button><button class="btn sm danger" type="button" data-pdel>刪除投票</button></div></form></details>` : ''}
   </div>`;
 }
 function bindPolls(root){
   root.querySelectorAll('[data-poll]').forEach(card=>{
+    const pe = card.querySelector('[data-pedit]');
+    if (pe) { const pid = card.dataset.poll; const compact = !card.classList.contains('card');
+      const upd = async (poll, msg) => { try{ const p = await api('updatePoll',{poll_id:pid, poll}); card.outerHTML = pollCard(p, compact); bindPolls(root); toast(msg); }catch(e){toast(e.message)} };
+      pe.onsubmit = e => { e.preventDefault(); const fd=new FormData(pe); const poll={question:fd.get('question'), close_at:fd.get('close_at')}; if(!pe.options.disabled) poll.options=String(fd.get('options')).split('\n'); upd(poll,'已更新投票'); };
+      pe.querySelector('[data-pstat]').onclick = ev => upd({status:ev.target.dataset.pstat}, ev.target.dataset.pstat==='closed'?'已截止':'已重新開放');
+      pe.querySelector('[data-pdel]').onclick = async () => { if(!confirm('刪除投票會連同所有票數一起刪除，確定嗎？')) return; try{ await api('deletePoll',{poll_id:pid}); card.remove(); toast('已刪除投票'); }catch(e){toast(e.message)} };
+    }
+    const qb = card.querySelector('[data-pollqr]');
+    if (qb) qb.onclick = () => openQR({eyebrow:'現場投票', title:qb.dataset.q, desc:'手機掃描 → 登入 → 投票（不記名、一人一票）', url:SITE()+'#/vote/'+card.dataset.poll});
     card.querySelectorAll('[data-vote]').forEach(btn=>btn.onclick=async()=>{
       card.querySelectorAll('button').forEach(x=>x.disabled=true);
       try{ const p=await api('vote',{poll_id:card.dataset.poll,option:btn.dataset.vote}); card.outerHTML=pollCard(p, !card.classList.contains('card')); toast('已投票，謝謝！'); }
@@ -580,26 +748,42 @@ async function renderProposals(app){
 /* ===== 決議追蹤 ===== */
 function decTable(list, withMeeting, editable){
   if(!list.length) return `<div class="empty">沒有決議事項</div>`;
-  return `<div class="tbl"><table><thead><tr>${withMeeting?'<th>會議</th>':''}<th>事項</th><th>負責人</th><th>期限</th><th>狀態</th><th>進度說明</th></tr></thead><tbody>
-  ${list.map(d=>`<tr>${withMeeting?`<td><a href="#/m/${esc(d.meeting_id)}">${esc(d.meeting_id)}</a></td>`:''}<td class="item">${esc(d.item)}</td><td>${esc(d.owner)}</td><td style="white-space:nowrap">${esc(d.due)}</td>
-  <td>${editable?`<select data-dec="${esc(d.dec_id)}" aria-label="狀態">${STATUS.map(s=>`<option ${s===d.status?'selected':''}>${s}</option>`).join('')}</select>`:statusChip(d.status)}</td><td>${esc(d.note)}</td></tr>`).join('')}</tbody></table></div>`;
+  return `<div class="tbl"><table><thead><tr>${withMeeting?'<th>會議</th>':''}<th>事項</th><th>負責人</th><th>期限</th><th>狀態</th><th>進度說明</th>${editable?'<th></th>':''}</tr></thead><tbody>
+  ${list.map(d=>`<tr class="${isOverdue(d)?'overdue':''}">${withMeeting?`<td><a href="#/m/${esc(d.meeting_id)}">${esc(d.meeting_id)}</a></td>`:''}<td class="item">${esc(d.item)}</td><td>${esc(d.owner)}</td><td style="white-space:nowrap">${esc(String(d.due||'').slice(0,10))}${isOverdue(d)?`<br><span class="chip hot">逾期 ${daysLate(d)} 天</span>`:''}</td>
+  <td>${editable?`<select data-dec="${esc(d.dec_id)}" aria-label="狀態">${STATUS.map(s=>`<option ${s===d.status?'selected':''}>${s}</option>`).join('')}</select>`:statusChip(d.status)}</td><td>${esc(d.note)}</td>
+  ${editable?`<td style="white-space:nowrap"><button class="btn sm" type="button" data-dedit="${esc(d.dec_id)}">編輯</button></td>`:''}</tr>`).join('')}</tbody></table></div>`;
 }
 async function renderDecisions(app){
   const all = await api('listDecisions');
-  let filter = '未完成';
-  const counts = s => all.filter(d=>s==='未完成'?d.status!=='已完成':s==='全部'?true:d.status===s).length;
+  let filter = all.some(isOverdue) ? '逾期' : '未完成';
+  const match = (d, s) => s==='全部' || (s==='未完成' ? d.status!=='已完成' : s==='逾期' ? isOverdue(d) : d.status===s);
+  const FILTERS = ['逾期','未完成','未開始','進行中','持續追蹤','已完成','全部'];
   const draw = () => {
-    const list = all.filter(d => filter==='全部' || (filter==='未完成' ? d.status!=='已完成' : d.status===filter));
+    app.querySelector('.filters').innerHTML = FILTERS.map(s=>`<button type="button" data-f="${s}" aria-pressed="${s===filter}">${s}（${all.filter(d=>match(d,s)).length}）</button>`).join('');
+    app.querySelectorAll('.filters button').forEach(b=>b.onclick=()=>{filter=b.dataset.f;draw()});
+    const list = all.filter(d => match(d, filter));
     $('#dt').innerHTML = decTable(list, true, isAdmin());
     $('#dt').querySelectorAll('[data-dec]').forEach(sel=>sel.onchange=async()=>{
       const d = all.find(x=>x.dec_id===sel.dataset.dec); d.status = sel.value;
-      try{ await api('saveDecision',{decision:d}); toast('已更新狀態'); }catch(e){ toast(e.message); } });
-    app.querySelectorAll('.filters button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.f===filter));
+      try{ await api('saveDecision',{decision:d}); toast('已更新狀態'); draw(); }catch(e){ toast(e.message); } });
+    $('#dt').querySelectorAll('[data-dedit]').forEach(b=>b.onclick=()=>{
+      const d = all.find(x=>x.dec_id===b.dataset.dedit); const tr = b.closest('tr');
+      tr.insertAdjacentHTML('afterend', `<tr><td colspan="7"><form class="edit-box stack" style="gap:10px">
+        <label class="f">事項<input name="item" required value="${esc(d.item)}"></label>
+        <div class="grid2"><label class="f">負責人<input name="owner" value="${esc(d.owner||'')}"></label><label class="f">期限<input name="due" type="date" value="${esc(String(d.due||'').slice(0,10))}"></label>
+        <label class="f">狀態<select name="status">${STATUS.map(s=>`<option ${s===d.status?'selected':''}>${s}</option>`).join('')}</select></label></div>
+        <label class="f">進度說明<input name="note" value="${esc(d.note||'')}"></label>
+        <div class="row between"><button class="btn sm danger" type="button" data-del>刪除這項決議</button><div class="row"><button class="btn" type="button" data-cancel>取消</button><button class="btn primary" type="submit">儲存</button></div></div></form></td></tr>`);
+      const f = tr.nextElementSibling.querySelector('form'); b.disabled = true;
+      f.querySelector('[data-cancel]').onclick = draw;
+      f.querySelector('[data-del]').onclick = async () => { if(!confirm('確定刪除這項決議？')) return; try{ await api('deleteDecision',{dec_id:d.dec_id}); all.splice(all.indexOf(d),1); toast('已刪除'); draw(); }catch(e){toast(e.message)} };
+      f.onsubmit = async e => { e.preventDefault(); const fd = new FormData(f); const n = {...d, item:fd.get('item'), owner:fd.get('owner'), due:fd.get('due'), status:fd.get('status'), note:fd.get('note')};
+        try{ await api('saveDecision',{decision:n}); Object.assign(d, n); toast('已更新'); draw(); }catch(err){toast(err.message)} };
+    });
   };
   app.innerHTML = `<div class="stack">${demoBanner()}${pageHead('決議追蹤','歷次會議決議與執行狀態')}
-    <div class="filters">${['未完成','未開始','進行中','持續追蹤','已完成','全部'].map(s=>`<button type="button" data-f="${s}">${s}（${counts(s)}）</button>`).join('')}</div>
+    <div class="filters"></div>
     <div class="card" id="dt"></div></div>`;
-  app.querySelectorAll('.filters button').forEach(b=>b.onclick=()=>{filter=b.dataset.f;draw()});
   draw();
 }
 
@@ -619,8 +803,9 @@ async function renderAdmin(app){
       <div><button class="btn primary" type="submit">儲存會議</button></div></form>
     <form class="card stack" id="ff"><h2>② 上傳會議報告與附件</h2>
       <div class="grid2"><label class="f" for="f_m">會議<select id="f_m">${opts}</select></label>
-      <label class="f" for="f_kind">類型<select id="f_kind"><option>會議報告</option><option>附件</option><option>會議紀錄</option></select></label></div>
-      <label class="f" for="f_file">檔案（網頁版會議報告 .html、PDF 或圖片，25MB 以內）<input id="f_file" type="file" accept=".html,.htm,application/pdf,image/*" required></label>
+      <label class="f" for="f_kind">類型<select id="f_kind"><option>會議報告</option><option>附件</option><option>簽到表</option><option>會議紀錄</option></select></label></div>
+      <label class="f" for="f_file">檔案（網頁版報告 .html、PDF、圖片、Word／Excel／PowerPoint，25MB 以內）<input id="f_file" type="file" accept="${FILE_ACCEPT}" required></label>
+      <div class="muted small">要附網址（例如雲端硬碟上的報告）請到該次會議頁的「附件」區貼上。</div>
       <div><button class="btn primary" type="submit">上傳</button></div></form>
     <form class="card stack" id="fa"><h2>③ 發布公告</h2>
       <div class="grid2"><label class="f" for="a_cat">類別<select id="a_cat">${ANN_CATS.map(c=>`<option>${c}</option>`).join('')}</select></label>
@@ -629,7 +814,7 @@ async function renderAdmin(app){
       <label class="f" for="a_m">來源會議<select id="a_m"><option value="">（無）</option>${opts}</select></label></div>
       <label class="f" for="a_title">標題<input id="a_title" required></label>
       <label class="f" for="a_body">內容<textarea id="a_body"></textarea></label>
-      <div class="row between"><label class="check"><input type="checkbox" id="a_pin"> 置頂</label><button class="btn primary" type="submit">發布公告</button></div></form>
+      <div class="row between"><div class="row"><label class="check"><input type="checkbox" id="a_pin"> 置頂</label><label class="check"><input type="checkbox" id="a_board"> 同時發到必看板（需要同仁按已讀的才勾）</label></div><button class="btn primary" type="submit">發布公告</button></div></form>
     <form class="card stack" id="fp"><h2>③ 新增投票（不記名）</h2>
       <div class="grid2"><label class="f" for="p_m">會議<select id="p_m">${opts}</select></label>
       <label class="f" for="p_close">截止日<input id="p_close" type="date"></label></div>
@@ -653,9 +838,11 @@ async function renderAdmin(app){
   if (!DEMO && !CENTER() && session.auth !== 'account') renderStaffAdmin(app);
   const run = (id, fn) => { $(id).onsubmit = async e => { e.preventDefault(); try{ await fn(e); }catch(err){ toast(err.message); } }; };
   run('#fm', async () => { await api('saveMeeting',{meeting:{meeting_id:$('#m_id').value.trim(),date:$('#m_date').value,title:$('#m_title').value,summary:$('#m_sum').value,status:$('#m_status').value,scribes:$('#m_scribes').value}}); toast('已儲存會議'); renderAdmin(app); });
-  run('#ff', async e => { const f=$('#f_file').files[0]; if(!f) return; let mime=f.type||''; if(/\.html?$/i.test(f.name)) mime='text/html';
-    toast('上傳中…'); await api('uploadFile',{meeting_id:$('#f_m').value,kind:$('#f_kind').value,name:f.name.replace(/\.html?$/i,''),mime,base64:await fileB64(f)}); toast('已上傳 '+f.name); e.target.reset(); });
-  run('#fa', async e => { await api('saveAnnouncement',{announcement:{category:$('#a_cat').value,event_date:$('#a_date').value,expires:$('#a_exp').value,meeting_id:$('#a_m').value,title:$('#a_title').value,body:$('#a_body').value,pinned:$('#a_pin').checked}}); toast('已發布公告'); e.target.reset(); });
+  run('#ff', async e => { const f=$('#f_file').files[0]; if(!f) return;
+    toast('上傳中…'); await uploadOne($('#f_m').value, $('#f_kind').value, f); toast('已上傳 '+f.name); e.target.reset(); });
+  run('#fa', async e => { const a = await api('saveAnnouncement',{announcement:{category:$('#a_cat').value,event_date:$('#a_date').value,expires:$('#a_exp').value,meeting_id:$('#a_m').value,title:$('#a_title').value,body:$('#a_body').value,pinned:$('#a_pin').checked}});
+    if ($('#a_board').checked) annToBoard({...a, pinned:$('#a_pin').checked?'yes':''});
+    toast('已發布公告'); e.target.reset(); });
   run('#fp', async e => { await api('savePoll',{poll:{meeting_id:$('#p_m').value,question:$('#p_q').value,options:$('#p_opts').value.split('\n'),close_at:$('#p_close').value}}); toast('已建立投票'); e.target.reset(); });
   run('#fd', async e => { await api('saveDecision',{decision:{meeting_id:$('#d_m').value,item:$('#d_item').value,owner:$('#d_owner').value,due:$('#d_due').value,status:'未開始'}}); toast('已新增決議'); e.target.reset(); });
 }
@@ -700,38 +887,58 @@ async function renderStaffAdmin(app){
 }
 
 /* ===== 會議紀錄：值日生上傳錄音或貼筆記 → AI 依病房會議紀錄格式產生草稿 → 護理長核定公開 ===== */
-const HEAD_FIELDS = [['time','會議時間'],['place','地點'],['chair','主席（含職稱）'],['recorder','記錄（含職稱）'],['attend','出席人員'],['leave','請假人員']];
+const HEAD_FIELDS = [['time','會議時間'],['place','地點'],['chair','主席（含職稱）'],['recorder','記錄（含職稱）'],['end','散會時間'],['attend','出席人員'],['leave','請假人員']];
 const TEMPLATE_BODY = `一、上次會議追蹤
 議題1.
-決議：
+決議執行情形：
 
 二、本次會議報告事項
 1.護理長報告
  (1)
- 說明：
+ 說明：（附件一）
  討論：
  決議：
 2.各組報告
-3.本次討論事項
-議題1.（提案人：）
+
+三、討論事項
+案由1.（提案單位／提案人：）
  說明：
  討論：
  決議：
-4.「病人照顧需求」問題討論
-5.臨時動議
 
-下次會議追蹤事項
-1.`;
+四、臨時動議
+無
+
+五、宣讀、確認會議紀錄
+
+六、本次會議追蹤事項
+(1)
+
+七、散會：　：　`;
 async function loadMinutes(id, meeting){
   const box = $('#minutes');
   let r;
   try { r = await api('getMinutes',{meeting_id:id}); } catch(e){ box.innerHTML = `<h2>會議紀錄</h2><div class="muted">${esc(e.message)}</div>`; return; }
   const mi = r.minutes || {header:{}, body:'', followups:[], status:'draft'};
+  const dd = curMeet?.d || {};
+  const boardBtn = isAdmin() && mi.status==='published' ? `<button class="btn primary" type="button" id="m_board">發到必看板：請未出席同仁閱讀</button>` : '';
+  const readBar = () => mi.status!=='published' ? '' : CONFIG.SIGNOFF==='board'
+    ? `<div class="readbar"><span>閱讀後請到<a href="${esc(CONFIG.BOARD_URL)}" target="_blank" rel="noopener">必看板</a>這則公告按「我已閱讀」完成簽閱</span>${boardBtn}</div>`
+    : dd.me_read ? `<div class="readbar"><span>✓ 您已簽閱本次會議紀錄</span></div>`
+    : dd.me_present ? `<div class="readbar"><span>您已出席本次會議，不需另外簽閱</span></div>`
+    : `<div class="readbar"><span>未出席的同仁請閱讀後簽閱（評鑑佐證用）</span><button class="btn primary" type="button" id="mread">我已閱讀，簽閱</button></div>`;
+  const bindRead = () => { const bb = $('#m_board'); if (bb) bb.onclick = () => {
+      const due = new Date(Date.now()+14*864e5); const dueS = new Date(due.getTime()-due.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+      toBoard({ title:`請閱讀「${meeting.title}」會議紀錄`, category:'會議', priority:'normal', is_task:true, task_deadline:dueS, display_days:7, read_validity_days:30,
+        content:`${meeting.title}（${meeting.date}）會議紀錄已核定公開。\n未出席的同仁請於 ${dueS} 前閱讀，閱讀後按「我已閱讀並完成」。\n\n會議紀錄：${SITE()}#/m/${id}` }); };
+    const b = $('#mread'); if (b) b.onclick = async () => { b.disabled = true;
+    try{ await api('confirmRead',{meeting_id:id}); dd.me_read = true; toast('已簽閱，謝謝'); loadMinutes(id, meeting); }catch(e){ toast(e.message); b.disabled=false; } }; };
   if (!r.can_edit) {
     box.innerHTML = r.minutes
-      ? `<div class="row between"><h2>會議紀錄</h2><button class="btn" type="button" id="mdoc">下載 Word 檔</button></div>${headTable(mi.header)}<div style="white-space:pre-wrap;color:var(--fg-2)">${esc(mi.body)}</div>`
+      ? `<div class="row between"><h2>會議紀錄</h2><button class="btn" type="button" id="mdoc">下載 Word 檔</button></div>${readBar()}${headTable(mi.header)}<div style="white-space:pre-wrap;color:var(--fg-2)">${esc(mi.body)}</div>`
       : `<h2>會議紀錄</h2><div class="muted">會議紀錄整理中，核定後會公告在這裡。</div>`;
     const b = $('#mdoc'); if (b) b.onclick = () => downloadDoc(meeting, mi);
+    bindRead();
     return;
   }
   box.innerHTML = `
@@ -739,20 +946,44 @@ async function loadMinutes(id, meeting){
     <div class="grid2">${HEAD_FIELDS.map(([k,t])=>`<label class="f" for="h_${k}">${t}<input id="h_${k}" value="${esc(mi.header[k]||(k==='time'?meeting.date:''))}"></label>`).join('')}</div>
     <div class="card stack" style="background:var(--bg)">
       <h2 style="font-size:16.5px">用 AI 整理紀錄（擇一）</h2>
-      <div class="grid2">
-        <div class="stack" style="gap:8px"><label class="f" for="m_audio">A. 上傳會議錄音（m4a／mp3，30MB 以內）${mi.has_audio?'<span class="chip ok" style="align-self:flex-start">已上傳錄音</span>':''}<input id="m_audio" type="file" accept="audio/*"></label>
+      <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+        <div class="stack" style="gap:8px"><label class="f" for="m_audio">A. 上傳會議錄音（m4a／mp3，30MB 以內；紀錄核定 30 天後自動刪除）${mi.has_audio?'<span class="chip ok" style="align-self:flex-start">已上傳錄音</span>':''}<input id="m_audio" type="file" accept="audio/*"></label>
           <div class="row"><button class="btn" type="button" id="m_up">上傳錄音</button><button class="btn primary" type="button" id="m_ai_a">由錄音產生紀錄</button></div></div>
         <div class="stack" style="gap:8px"><label class="f" for="m_notes">B. 貼上會議筆記<textarea id="m_notes" placeholder="值日生的手寫或打字重點"></textarea></label>
           <div><button class="btn primary" type="button" id="m_ai_t">由筆記產生紀錄</button></div></div>
+        <div class="stack" style="gap:8px"><div class="f" style="font-size:14px;color:var(--fg-2)">C. 沒有錄音也沒有筆記</div>
+          <div class="muted small" style="margin:0">依會議報告（簡報內容與講者備註）、公告、投票結果、決議、提議與附件整理成紀錄。討論內容會標「〔會中討論待補〕」，請會後補上。</div>
+          <div><button class="btn primary" type="button" id="m_ai_d">由會議資料產生紀錄</button></div></div>
       </div>
-      <div class="muted small">AI 會依「病房會議紀錄」格式整理，病人姓名與病歷號自動改為病人A／B。產生的是草稿，請核對後再送核定。整理一小時錄音約需 1–3 分鐘。</div>
+      <div class="muted small">AI 依院方會議記錄格式（一～七項）整理，引用附件會寫「（附件一）」，病人姓名與病歷號自動改為病人A／B。產生的是草稿，請核對後再送核定。整理一小時錄音約需 1–3 分鐘。</div>
     </div>
+    <div class="row"><button class="btn sm" type="button" id="m_fill">從簽到名單帶入出席／請假</button></div>
     <label class="f" for="m_body">紀錄內容（可直接編輯或手動輸入）<textarea id="m_body" style="min-height:420px;line-height:1.7">${esc(mi.body || TEMPLATE_BODY)}</textarea></label>
-    <div class="stack" style="gap:8px"><h2 style="font-size:16.5px">下次會議追蹤事項</h2>
+    <div class="stack" style="gap:8px"><h2 style="font-size:16.5px">本次會議追蹤事項（列入決議追蹤）</h2>
       <div id="m_fu" class="stack" style="gap:8px"></div>
       <div><button class="btn" type="button" id="m_addfu">＋ 新增一項</button></div>
       ${isAdmin()?'<div class="muted small">核定時，勾選的事項會加入「決議追蹤」。</div>':''}</div>
-    <div class="row"><button class="btn" type="button" id="m_save">儲存草稿</button><button class="btn" type="button" id="m_doc">下載 Word 檔</button>${isAdmin()?'<button class="btn primary" type="button" id="m_ok">核定並公開</button>':''}</div>`;
+    <div class="row"><button class="btn" type="button" id="m_save">${mi.status==='published'?'儲存修改':'儲存草稿'}</button><button class="btn" type="button" id="m_doc">下載 Word 檔</button>${isAdmin()?(mi.status==='published'?'<button class="btn" type="button" id="m_reopen">退回草稿</button>':'<button class="btn primary" type="button" id="m_ok">核定並公開</button>'):''}</div>
+    ${readBar()}
+    <details class="mgr" id="m_ver"><summary>修改紀錄（每次儲存、AI 產生、核定都會留一版）</summary><div id="m_verlist" class="muted small" style="margin-top:6px">載入中…</div></details>
+    ${isAdmin()&&mi.status==='published'&&CONFIG.SIGNOFF!=='board'?'<details class="mgr" id="m_rd"><summary>簽閱情形</summary><div id="m_rdlist" class="muted small" style="margin-top:6px">載入中…</div></details>':''}`;
+  bindRead();
+  const ro = $('#m_reopen'); if (ro) ro.onclick = async () => { if(!confirm('退回草稿後同仁會暫時看不到紀錄，確定嗎？')) return; try{ await api('reopenMinutes',{meeting_id:id}); toast('已退回草稿'); loadMinutes(id, meeting); }catch(e){toast(e.message)} };
+  $('#m_ver').addEventListener('toggle', async function(){ if(!this.open) return; const el = $('#m_verlist');
+    try{ const vs = await api('listMinutesLog',{meeting_id:id});
+      el.innerHTML = vs.length ? vs.map(v=>`<div class="ver"><span style="min-width:130px">${esc(String(v.at).slice(0,16).replace('T',' '))}</span><b>${esc(v.action)}</b><span>${esc(v.by)}</span>${v.size?`<button class="btn sm" type="button" data-ver="${esc(v.log_id)}">查看</button>`:''}</div>`).join('') : '還沒有修改紀錄';
+      el.querySelectorAll('[data-ver]').forEach(b=>b.onclick=async()=>{ try{ const v = await api('getMinutesVersion',{log_id:b.dataset.ver});
+        const old = el.querySelector('.verview'); if (old) old.remove();
+        b.closest('.ver').insertAdjacentHTML('afterend', `<div class="verview edit-box stack" style="gap:8px"><div class="row between"><b>${esc(String(v.at).slice(0,16).replace('T',' '))}　${esc(v.action)}（${esc(v.by)}）</b><button class="btn sm" type="button" data-restore>放回編輯區</button></div><div style="white-space:pre-wrap;max-height:360px;overflow:auto;color:var(--fg-2)">${esc(v.body)}</div></div>`);
+        el.querySelector('[data-restore]').onclick = () => { $('#m_body').value = v.body; HEAD_FIELDS.forEach(([k])=>{ if(v.header[k]!=null) $('#h_'+k).value=v.header[k]; }); restoreOf = String(v.at).slice(0,16).replace('T',' '); toast('已放回編輯區，按「儲存」才會生效'); $('#m_body').scrollIntoView({block:'center'}); };
+      }catch(e){toast(e.message)} });
+    }catch(e){ el.textContent = e.message; } });
+  const rd = $('#m_rd'); if (rd) rd.addEventListener('toggle', async function(){ if(!this.open) return; const el = $('#m_rdlist');
+    try{ const r = await api('listReads',{meeting_id:id});
+      el.innerHTML = `<div style="color:var(--fg-2)">出席 ${r.n_present} 人・已簽閱 ${r.reads.length} 人${r.has_dir?`・<b style="color:var(--accent)">未簽閱 ${r.pending.length} 人</b>`:''}</div>
+        ${r.reads.length?`<div style="margin-top:6px">已簽閱：${r.reads.map(x=>esc(x.name)+'（'+esc(x.at.slice(5))+'）').join('、')}</div>`:''}
+        ${r.has_dir? (r.pending.length?`<div style="margin-top:6px">未出席也未簽閱：${r.pending.map(x=>esc(x.name)).join('、')}</div>`:'<div style="margin-top:6px">全員已出席或簽閱 ✓</div>') : '<div style="margin-top:6px">設定 ACCOUNT_SHEET_ID 後可列出未簽閱名單</div>'}`;
+    }catch(e){ el.textContent = e.message; } });
   const fuBox = $('#m_fu');
   const fuRow = (f={}) => { const d=document.createElement('div'); d.className='grid2'; d.style.gridTemplateColumns='auto 2fr 1fr 1fr';
     d.innerHTML = `<input type="checkbox" checked aria-label="加入決議追蹤" style="width:auto;align-self:center"><input aria-label="事項" value="${esc(f.item||'')}" placeholder="追蹤事項"><input aria-label="負責人" value="${esc(f.owner||'')}" placeholder="負責人"><input aria-label="期限" type="date" value="${esc(f.due||'')}">`; fuBox.appendChild(d); };
@@ -766,38 +997,213 @@ async function loadMinutes(id, meeting){
   const strip = x => ({...x, followups:x.followups.map(({pick,...f})=>f)});
   const busy = (on, msg) => { box.querySelectorAll('button').forEach(b=>b.disabled=on); if(msg) toast(msg); };
   const reload = () => loadMinutes(id, meeting);
-  $('#m_save').onclick = async () => { busy(true); try{ await api('saveMinutes',{meeting_id:id,minutes:strip(collect())}); toast('已儲存草稿'); reload(); }catch(e){ toast(e.message); busy(false);} };
+  let restoreOf = '';
+  $('#m_save').onclick = async () => { busy(true); try{ await api('saveMinutes',{meeting_id:id,minutes:strip(collect()),restore_of:restoreOf||undefined}); toast('已儲存草稿'); reload(); }catch(e){ toast(e.message); busy(false);} };
   $('#m_doc').onclick = () => downloadDoc(meeting, collect());
   $('#m_up').onclick = async () => { const f=$('#m_audio').files[0]; if(!f) return toast('請先選擇錄音檔');
     if (f.size > 30*1048576) return toast('錄音檔超過 30MB');
     busy(true,'上傳錄音中…'); try{ await api('uploadAudio',{meeting_id:id,name:f.name,mime:f.type||'audio/mp4',base64:await fileB64(f)}); toast('錄音已上傳'); reload(); }catch(e){ toast(e.message); busy(false);} };
   const ai = async (source) => { if (source==='text' && !$('#m_notes').value.trim()) return toast('請先貼上會議筆記');
+    if ($('#m_body').value.trim() && $('#m_body').value.trim()!==TEMPLATE_BODY.trim() && !confirmReplace()) return;
     busy(true,'AI 整理中，請稍候…'); try{ await api('summarize',{meeting_id:id,source,text:$('#m_notes').value,header:collect().header}); toast('已產生紀錄草稿，請核對'); reload(); }catch(e){ toast(e.message); busy(false);} };
   $('#m_ai_a').onclick = () => ai('audio');
   $('#m_ai_t').onclick = () => ai('text');
+  $('#m_ai_d').onclick = () => ai('data');
+  $('#m_fill').onclick = async () => { try { const a = curMeet?.attendance || await api('listAttendance',{meeting_id:id});
+      const fmt = s => a.list.filter(x=>x.status===s).map(x=>x.name+(x.title?'（'+x.title+'）':'')).join('、');
+      $('#h_attend').value = fmt('出席'); $('#h_leave').value = fmt('請假') || '無'; toast(`已帶入出席 ${a.n_present} 人、請假 ${a.n_leave} 人`); } catch(e){ toast(e.message); } };
   const ok = $('#m_ok'); if (ok) ok.onclick = async () => { busy(true); try{ const x=collect();
       await api('saveMinutes',{meeting_id:id,minutes:strip(x)});
       await api('approveMinutes',{meeting_id:id,add_followups:x.followups.filter(f=>f.pick).map(({pick,...f})=>f)}); toast('已核定並公開'); render(); }catch(e){ toast(e.message); busy(false);} };
 }
 function headTable(h){ return `<div class="tbl"><table><tbody>${HEAD_FIELDS.filter(([k])=>h[k]).map(([k,t])=>`<tr><th style="width:140px">${t.replace(/（.*）/,'')}</th><td>${esc(h[k])}</td></tr>`).join('')}</tbody></table></div>`; }
+function confirmReplace(){ return window.confirm('AI 產生的草稿會取代目前的紀錄內容，確定嗎？'); }
 function downloadDoc(meeting, mi){
   const h = mi.header || {};
-  const row = (k,v)=>`<tr><td style="width:22%;border:1px solid #000;padding:6px;font-size:14pt;text-align:center">${k}</td><td style="border:1px solid #000;padding:6px;font-size:14pt">${esc(v||'')}</td></tr>`;
-  const fu = (mi.followups||[]).filter(f=>f.item).map((f,i)=>`${i+1}.${esc(f.item)}${f.owner?'（負責人：'+esc(f.owner)+'）':''}${f.due?'（期限：'+esc(f.due)+'）':''}`).join('<br>');
+  const td = (v, x='') => `<td style="border:1px solid #000;padding:5pt 6pt;font-size:13pt;${x}">${v}</td>`;
+  const lab = v => td(v, 'text-align:center;width:16%');
+  const people = (curMeet?.attendance?.list || []);
+  let signRows = '';
+  if (people.length) {
+    const cell = p => p ? td(esc(p.title||'急診'),'text-align:center') + td(esc(p.name),'text-align:center') + td(p.status==='請假'?'請假':esc((p.time||'')+' '+(p.method||'')),'text-align:center;font-size:11pt') : td('')+td('')+td('');
+    for (let k=0;k<people.length;k+=2) signRows += `<tr>${cell(people[k])}${cell(people[k+1])}</tr>`;
+  } else {
+    signRows = `<tr>${td('出席','text-align:center')}${td(esc(h.attend||''),'',)}${td('','')}${td('請假','text-align:center')}${td(esc(h.leave||''))}${td('')}</tr>`;
+  }
+  const atts = (curMeet?.atts || []);
+  const photo = (curMeet?.d.attachments || []).some(a=>a.kind==='簽到表');
+  const body = esc(mi.body).replace(/\n/g,'<br>').replace(/ {2}/g,'&nbsp;&nbsp;').replace(/^ /gm,'&nbsp;');
   const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${esc(meeting.title)}</title>
-  <style>body{font-family:標楷體,DFKai-SB,serif;font-size:12pt;line-height:1.6}h1{font-size:16pt;text-align:center}</style></head><body>
-  <h1>嘉義基督教醫院 急診 會議紀錄</h1>
-  <table style="border-collapse:collapse;width:100%">${row('會議名稱',meeting.title)}${row('會議時間',h.time)}${row('地　　點',h.place)}${row('主　　席',h.chair)}${row('記　　錄',h.recorder)}${row('出席人員',h.attend)}${row('請假人員',h.leave)}</table>
-  <p style="font-size:14pt;margin-top:16pt"><b>討論內容如下</b></p>
-  <div>${esc(mi.body).replace(/\n/g,'<br>')}</div>
-  ${fu?`<p style="font-size:14pt"><b>下次會議追蹤事項</b></p><p>${fu}</p>`:''}</body></html>`;
+  <style>@page{size:21cm 29.7cm;margin:2cm 1.8cm}body{font-family:標楷體,DFKai-SB,serif;font-size:13pt;line-height:1.6}table{border-collapse:collapse;width:100%}</style></head><body>
+  <p style="text-align:center;font-size:18pt;font-weight:bold;margin:0">戴德森醫療財團法人嘉義基督教醫院會議記錄</p>
+  <p style="margin:4pt 0">【首頁】</p>
+  <table>
+   <tr>${lab('會議名稱')}<td colspan="5" style="border:1px solid #000;padding:5pt 6pt;font-size:13pt;text-align:center">${esc(meeting.title)}</td></tr>
+   <tr>${lab('會議時間')}<td colspan="2" style="border:1px solid #000;padding:5pt 6pt;font-size:13pt;text-align:center">${esc(h.time||meeting.date)}</td>${lab('地　　點')}<td colspan="2" style="border:1px solid #000;padding:5pt 6pt;font-size:13pt;text-align:center">${esc(h.place||'')}</td></tr>
+   <tr>${lab('主　　席')}<td colspan="2" style="border:1px solid #000;padding:5pt 6pt;font-size:13pt;text-align:center">${esc(h.chair||'')}</td>${lab('記　　錄')}<td colspan="2" style="border:1px solid #000;padding:5pt 6pt;font-size:13pt;text-align:center">${esc(h.recorder||'')}</td></tr>
+   <tr><td colspan="6" style="border:1px solid #000;padding:5pt;font-size:14pt;text-align:center;letter-spacing:6pt">參加人員簽到</td></tr>
+   <tr>${['職稱','出席人員','簽到','職稱','出席人員','簽到'].map(x=>td(x,'text-align:center')).join('')}</tr>
+   ${signRows}
+  </table>
+  ${photo?'<p style="font-size:11pt">※ 手寫簽到表照片存於網站本次會議「出席簽到」。</p>':''}
+  <p style="font-size:11pt;margin-top:8pt">會議記錄內容請按以下項目順序完成：一、上次會議追蹤、決議執行情形　二、本次會議報告事項　三、討論事項　四、臨時動議　五、宣讀、確認會議記錄　六、本次會議追蹤事項　七、散會　八、主席裁示及簽章</p>
+  <br clear="all" style="page-break-before:always">
+  <p style="text-align:center;font-size:18pt;font-weight:bold;margin:0">戴德森醫療財團法人嘉義基督教醫院會議記錄</p>
+  <p style="margin:4pt 0">【續頁】</p>
+  <table><tr><td style="border:1px solid #000;padding:8pt 10pt;font-size:13pt;line-height:1.7">${body}
+  ${atts.length?`<br><br><b>附件</b><br>${atts.map(a=>`${a.no}：${esc(a.name)}${a.url?'　'+esc(a.url):''}`).join('<br>')}`:''}</td></tr>
+  <tr><td style="border:1px solid #000;padding:10pt;font-size:13pt;height:60pt">主席簽章：${'&nbsp;'.repeat(40)}主管簽章：</td></tr></table>
+  </body></html>`;
   const a = document.createElement('a');
   a.href = URL.createObjectURL(new Blob(['﻿'+html],{type:'application/msword'}));
   a.download = `${meeting.meeting_id}_會議紀錄.doc`; document.body.appendChild(a); a.click(); a.remove();
 }
 
+/* ===== 上傳與附件 ===== */
+const FILE_ACCEPT = '.html,.htm,.pdf,image/*,.doc,.docx,.xls,.xlsx,.ppt,.pptx';
+const MIME_BY_EXT = {html:'text/html',htm:'text/html',pdf:'application/pdf',doc:'application/msword',xls:'application/vnd.ms-excel',ppt:'application/vnd.ms-powerpoint',
+  docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',xlsx:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation'};
+async function uploadOne(mid, kind, f){
+  if (f.size > 25*1048576) throw new Error('檔案超過 25MB');
+  const ext = (f.name.split('.').pop()||'').toLowerCase();
+  const mime = MIME_BY_EXT[ext] || f.type || '';
+  return api('uploadFile',{meeting_id:mid, kind, name: /^html?$/.test(ext) ? f.name.replace(/\.html?$/i,'') : f.name, mime, base64: await fileB64(f)});
+}
+function renderAtts(id, d){
+  const box = $('#atts'); if (!box) return;
+  const can = d.can_scribe || isAdmin();
+  const list = numberAtts(d.attachments);
+  curMeet.atts = list;
+  box.innerHTML = `<div class="row between"><h2>附件</h2><span class="muted small">會議紀錄引用時寫「（附件一）」</span></div>
+    <div class="files">${list.map(a=>`<div class="file"><span class="att-no">${a.no}</span><span class="chip">${esc(a.kind||'附件')}</span><span class="n">${esc(a.name)}${a.url?`<br><span class="muted small">${esc(a.url)}</span>`:''}</span>
+      <button class="btn sm" type="button" data-open="${esc(a.att_id)}">${a.url?'開啟連結':'開啟'}</button>${can && (isAdmin()||a.kind!=='會議報告')?`<button class="btn sm" type="button" data-del="${esc(a.att_id)}" aria-label="刪除 ${esc(a.name)}">刪除</button>`:''}</div>`).join('') || '<div class="empty">還沒有附件</div>'}</div>
+    ${can?`<div class="addbox stack" style="gap:10px">
+      <form class="grid2" id="lk" style="grid-template-columns:minmax(0,1fr) minmax(0,2fr) auto;align-items:end">
+        <label class="f" for="lk_n">附件名稱<input id="lk_n" placeholder="例：9月品質指標報告"></label>
+        <label class="f" for="lk_u">網址<input id="lk_u" type="url" placeholder="https://drive.google.com/…" required></label>
+        <button class="btn primary" type="submit">加入網址</button></form>
+      <form class="row" id="up"><label class="f" for="up_f" style="flex:1">或上傳檔案（PDF、圖片、Word／Excel／PowerPoint，25MB 以內）<input id="up_f" type="file" accept="${FILE_ACCEPT}" required></label><button class="btn" type="submit">上傳附件</button></form>
+      <div class="muted small">雲端硬碟的網址請確認同仁有權限開啟（建議分享給院內帳號，不要開「知道連結的任何人」）。</div></div>`:''}`;
+  box.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openFile(b.dataset.open));
+  const refresh = async () => { const nd = await api('getMeeting',{meeting_id:id}); curMeet.d = nd; renderAtts(id, nd); };
+  box.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{ if(!confirm('確定刪除這個附件？')) return; try{ await api('deleteFile',{att_id:b.dataset.del}); toast('已刪除'); refresh(); }catch(e){toast(e.message)} });
+  const lk = $('#lk'); if (lk) lk.onsubmit = async e => { e.preventDefault(); try{ await api('addLink',{meeting_id:id,name:$('#lk_n').value.trim(),url:$('#lk_u').value.trim()}); toast('已加入附件'); refresh(); }catch(err){toast(err.message)} };
+  const up = $('#up'); if (up) up.onsubmit = async e => { e.preventDefault(); const f=$('#up_f').files[0]; if(!f) return; try{ toast('上傳中…'); await uploadOne(id,'附件',f); toast('已上傳'); refresh(); }catch(err){toast(err.message)} };
+}
+
+/* ===== 出席簽到 ===== */
+async function loadAttend(id, m){
+  const box = $('#attend'); if (!box) return;
+  let a; try { a = await api('listAttendance',{meeting_id:id}); } catch(e){ box.innerHTML = `<h2>出席簽到</h2><div class="muted">${esc(e.message)}</div>`; return; }
+  if (curMeet) curMeet.attendance = a;
+  const photos = (curMeet?.d.attachments||[]).filter(x=>x.kind==='簽到表');
+  box.innerHTML = `<div class="row between"><h2>出席簽到</h2><div class="chips"><span class="chip teal">出席 ${a.n_present}</span><span class="chip">請假 ${a.n_leave}</span></div></div>
+    <div class="row">${a.me?`<span class="chip ok">您已簽到（${esc(a.me)}）</span>`: a.today||a.can_edit ? `<button class="btn primary" type="button" id="selfIn">我已到場，簽到</button>` : `<span class="muted small">會議當天（${esc(m.date)}）可在這裡自行簽到</span>`}</div>
+    ${a.can_edit?`<div class="addbox stack" style="gap:10px"><div class="small" style="font-weight:700">值日生／護理長登錄簽到（三種方式可並用）</div>
+      <div class="row">
+        <a class="btn primary" href="#/checkin/${esc(id)}">② 刷卡／輸入員編　③ 掃條碼</a>
+        <label class="btn" for="sp_f" style="cursor:pointer">① 上傳簽到表照片</label><input id="sp_f" type="file" accept="image/*" capture="environment" hidden>
+        ${photos.length?`<button class="btn" type="button" id="sp_ai">AI 辨識簽到表</button>`:''}
+      </div>
+      ${photos.length?`<div class="row small">${photos.map((p,i)=>`<button class="btn sm" type="button" data-open="${esc(p.att_id)}">簽到表照片 ${i+1}</button>`).join('')}</div>`:''}
+      <div id="sp_out"></div></div>`:''}
+    ${a.list.length?`<div class="alist">${a.list.map(p=>`<div class="p ${p.status==='請假'?'leave':''}"><span class="n">${esc(p.name||p.staff_id)}${p.title?` <span class="muted small">${esc(p.title)}</span>`:''}</span><span class="muted small">${p.status==='請假'?'請假':esc(p.time)}</span>${a.can_edit?`<button type="button" data-rm="${esc(p.key)}" aria-label="移除 ${esc(p.name)}">×</button>`:''}</div>`).join('')}</div>`:'<div class="empty">還沒有人簽到</div>'}`;
+  const reload = () => loadAttend(id, m);
+  box.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openFile(b.dataset.open));
+  const si = $('#selfIn'); if (si) si.onclick = async () => { si.disabled=true; try{ await api('checkin',{meeting_id:id}); toast('簽到完成'); reload(); }catch(e){ toast(e.message); si.disabled=false; } };
+  box.querySelectorAll('[data-rm]').forEach(b=>b.onclick=async()=>{ try{ await api('removeAttendance',{meeting_id:id,key:b.dataset.rm}); reload(); }catch(e){toast(e.message)} });
+  const sp = $('#sp_f'); if (sp) sp.onchange = async () => { const f=sp.files[0]; if(!f) return;
+    try{ toast('上傳簽到表中…'); await uploadOne(id,'簽到表',f); curMeet.d = await api('getMeeting',{meeting_id:id}); toast('已上傳，可按「AI 辨識簽到表」'); reload(); }catch(e){toast(e.message)} };
+  const ai = $('#sp_ai'); if (ai) ai.onclick = async () => { ai.disabled=true; toast('AI 辨識中…');
+    try{ const people = await api('readSignSheet',{meeting_id:id}); showSignReview(id, people, reload); }catch(e){ toast(e.message); } ai.disabled=false; };
+}
+function showSignReview(id, people, reload){
+  const out = $('#sp_out');
+  if (!people.length) return out.innerHTML = '<div class="muted small">沒有辨識到人員，請確認照片清楚、整張表都有拍到。</div>';
+  out.innerHTML = `<div class="small muted" style="margin:4px 0 6px">請核對 AI 辨識結果（「?」表示看不清楚），確認後按「登錄簽到」。員編有帶出來的會自動對應帳號中心名冊。</div>
+    <div class="tbl"><table><thead><tr><th></th><th>單位</th><th>姓名</th><th>員編</th><th>狀態</th></tr></thead><tbody>
+    ${people.map((p,i)=>`<tr data-i="${i}"><td><input type="checkbox" ${p.status==='未到'?'':'checked'} aria-label="登錄"></td><td>${esc(p.unit)}</td>
+      <td><input value="${esc(p.name)}" aria-label="姓名" style="min-width:110px"></td><td><input value="${esc(p.staff_id)}" aria-label="員編" style="width:90px"></td>
+      <td><select aria-label="狀態">${['出席','請假','未到'].map(s=>`<option ${s===p.status?'selected':''}>${s}</option>`).join('')}</select></td></tr>`).join('')}</tbody></table></div>
+    <div style="margin-top:8px"><button class="btn primary" type="button" id="sp_ok">登錄簽到</button></div>`;
+  $('#sp_ok').onclick = async () => {
+    const rows = [...out.querySelectorAll('tr[data-i]')].filter(r=>r.querySelector('input[type=checkbox]').checked).map(r=>{const i=r.querySelectorAll('input,select');return {unit:people[r.dataset.i].unit,name:i[1].value.trim(),staff_id:i[2].value.trim(),status:i[3].value}});
+    try{ await api('checkinBatch',{meeting_id:id,people:rows}); toast('已登錄 '+rows.filter(r=>r.status!=='未到').length+' 人'); reload(); }catch(e){toast(e.message)} };
+}
+
+/* ===== 現場簽到（刷卡／輸入員編／掃條碼） ===== */
+function beep(ok){ try{ const c=new (window.AudioContext||window.webkitAudioContext)(); const o=c.createOscillator(); const g=c.createGain(); o.frequency.value=ok?880:220; g.gain.value=.08; o.connect(g); g.connect(c.destination); o.start(); o.stop(c.currentTime+(ok?.12:.3)); }catch(_){} }
+function loadScript(src){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=src; s.onload=res; s.onerror=rej; document.head.appendChild(s); }); }
+async function renderCheckin(app, id){
+  const d = await api('getMeeting',{meeting_id:id}); const m = d.meeting;
+  if (!d.can_scribe && !isAdmin()) { app.innerHTML = `<div class="card">只有本次值日生或護理長可以開啟現場簽到。<a href="#/live/${esc(id)}">改為自行簽到 →</a></div>`; return; }
+  let status = '出席';
+  app.innerHTML = `<div class="stack">${demoBanner()}<div><a href="#/m/${esc(id)}">← 回會議</a></div>
+    ${pageHead('現場簽到', esc(m.title), `<span class="chip teal" id="k_cnt"></span>`)}
+    <div class="card kiosk">
+      <div class="filters" role="group" aria-label="簽到狀態">${['出席','請假'].map(s=>`<button type="button" data-s="${s}" aria-pressed="${s===status}">${s}</button>`).join('')}</div>
+      <form id="kf"><label class="f" for="k_in">刷員工證、掃條碼，或輸入員編後按 Enter<input id="k_in" class="kin" autocomplete="off" autocorrect="off" spellcheck="false" inputmode="numeric" enterkeyhint="done"></label></form>
+      <div id="k_msg" class="kmsg" role="status" aria-live="polite">等待刷卡…</div>
+      <div class="row" style="justify-content:center"><button class="btn" type="button" id="k_cam">用手機相機掃條碼</button><button class="btn" type="button" id="k_nm">沒有員編，輸入姓名</button></div>
+      <div id="k_reader"></div>
+      <div class="muted small">USB 條碼槍、讀卡機會自動把號碼打進上面的框；手機請按「用手機相機掃條碼」。同一人重複刷不會重複計算。</div>
+    </div>
+    <section class="card"><h2 style="margin-bottom:10px">已簽到</h2><div id="k_list"></div></section></div>`;
+  const inp = $('#k_in'), msg = $('#k_msg');
+  const show = (cls, t) => { msg.className = 'kmsg ' + cls; msg.textContent = t; };
+  const drawList = a => { $('#k_cnt').textContent = `出席 ${a.n_present}・請假 ${a.n_leave}`;
+    $('#k_list').innerHTML = a.list.length ? `<div class="alist">${[...a.list].reverse().map(p=>`<div class="p ${p.status==='請假'?'leave':''}"><span class="n">${esc(p.name||p.staff_id)}</span><span class="muted small">${p.status==='請假'?'請假':esc(p.time)}・${esc(p.method)}</span></div>`).join('')}</div>` : '<div class="empty">還沒有人簽到</div>'; };
+  drawList(await api('listAttendance',{meeting_id:id}));
+  let last = {code:'', t:0};
+  const submit = async (code, method) => {
+    code = String(code||'').trim(); if (!code) return;
+    if (code===last.code && Date.now()-last.t < 3000) return; last = {code, t:Date.now()};
+    show('', '查詢中…');
+    try { const r = await api('checkin',{meeting_id:id, staff_id:code, status, method});
+      beep(true); show(r.already?'warn':'ok', r.already ? `${r.name||code} 已經簽到過` : `✓ ${r.name||code}${r.title?'（'+r.title+'）':''}　${status}`);
+      drawList(await api('listAttendance',{meeting_id:id})); }
+    catch(e){ beep(false); show('bad', e.message); }
+  };
+  $('#kf').onsubmit = e => { e.preventDefault(); const v = inp.value; inp.value=''; submit(v, '刷卡／輸入員編'); };
+  app.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{ status=b.dataset.s; app.querySelectorAll('[data-s]').forEach(x=>x.setAttribute('aria-pressed',x.dataset.s===status)); inp.focus(); });
+  $('#k_nm').onclick = async () => { const n = prompt('輸入姓名（沒有員編的人員，例如外單位）'); if(!n) return;
+    try{ await api('checkin',{meeting_id:id,name:n.trim(),status,method:'手動輸入'}); beep(true); show('ok', `✓ ${n.trim()}　${status}`); drawList(await api('listAttendance',{meeting_id:id})); }catch(e){ beep(false); show('bad', e.message); } };
+  $('#k_cam').onclick = async () => {
+    if (scanner) { stopScanner(); $('#k_reader').innerHTML=''; $('#k_cam').textContent='用手機相機掃條碼'; return; }
+    try { if (!window.Html5Qrcode) { try { await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js'); } catch(_) { await loadScript('https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js'); } }
+      const F = window.Html5QrcodeSupportedFormats;
+      scanner = new Html5Qrcode('k_reader', {formatsToSupport:[F.CODE_128,F.CODE_39,F.CODE_93,F.CODABAR,F.EAN_13,F.ITF,F.QR_CODE], verbose:false});
+      await scanner.start({facingMode:'environment'}, {fps:10, qrbox:{width:280,height:130}, experimentalFeatures:{useBarCodeDetectorIfSupported:true}}, t=>submit(t,'掃條碼'), ()=>{});
+      $('#k_cam').textContent='關閉相機'; show('', '對準員工證條碼…');
+    } catch(e){ stopScanner(); show('bad', '無法開啟相機：請允許相機權限，或改用刷卡／輸入員編'); }
+  };
+  document.addEventListener('click', function keep(e){ if (!document.body.contains(inp)) return document.removeEventListener('click', keep); if (!scanner && !e.target.closest('button,a,input,select,label')) inp.focus(); });
+  inp.focus();
+}
+
+/* ===== 會議現場（同仁掃 QR 進來：簽到＋投票） ===== */
+async function renderLive(app, id){
+  const [d, a] = await Promise.all([api('getMeeting',{meeting_id:id}), api('listAttendance',{meeting_id:id})]);
+  const m = d.meeting; const open = d.polls.filter(p=>p.open);
+  app.innerHTML = `<div class="stack bigpoll">${demoBanner()}
+    <section class="card hero"><div><div class="eyebrow">會議現場</div><h1>${esc(m.title)}</h1><div class="meta">${esc(m.date)}　｜　${esc(session.name)}</div></div></section>
+    <section class="card stack"><h2>簽到</h2>${a.me?`<div class="kmsg ok">✓ 您已簽到（${esc(a.me)}）</div>`: a.today||a.can_edit ? `<button class="btn primary big" type="button" id="selfIn">我已到場，簽到</button>` : `<div class="muted">會議當天（${esc(m.date)}）才能自行簽到</div>`}</section>
+    ${open.length ? open.map(p=>pollCard(p)).join('') : '<div class="card empty">目前沒有進行中的投票</div>'}
+    <div><a href="#/m/${esc(id)}">查看完整會議資料 →</a></div></div>`;
+  const si = $('#selfIn'); if (si) si.onclick = async () => { si.disabled=true; try{ await api('checkin',{meeting_id:id}); toast('簽到完成'); renderLive(app, id); }catch(e){ toast(e.message); si.disabled=false; } };
+  bindPolls(app);
+}
+async function renderVote(app, pid){
+  const p = (await api('listPolls')).find(x=>x.poll_id===pid);
+  if (!p) { app.innerHTML = '<div class="card">找不到這個投票，可能尚未公開或已刪除。</div>'; return; }
+  app.innerHTML = `<div class="stack bigpoll">${demoBanner()}${pollCard(p)}<div><a href="#/polls">全部投票 →</a></div></div>`;
+  bindPolls(app);
+}
+
 /* ===== 檔案檢視：登入後才從後端取檔，不公開雲端硬碟連結 ===== */
 async function openFile(id){
+  const link = (curMeet?.d.attachments||[]).find(a=>a.att_id===id && a.url);
+  if (link) return window.open(link.url, '_blank', 'noopener');
   const v=$('#viewer'), body=$('#vbody');
   body.innerHTML='<div class="empty" style="color:#bbb;flex:1">載入中…</div>'; v.hidden=false;
   try{
@@ -805,6 +1211,9 @@ async function openFile(id){
     $('#vtitle').textContent = f.name;
     let html = f.text;
     if (!html && f.mime==='text/html') html = new TextDecoder().decode(Uint8Array.from(atob(f.base64),c=>c.charCodeAt(0)));
+    if (f.url){ v.hidden=true; return window.open(f.url,'_blank','noopener'); }
+    if (!/^(text\/html|application\/pdf|image\/)/.test(f.mime)){ v.hidden=true;
+      const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([Uint8Array.from(atob(f.base64),c=>c.charCodeAt(0))],{type:f.mime})); a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); return toast('已下載 '+f.name); }
     if (f.mime==='text/html'){ const fr=document.createElement('iframe'); fr.setAttribute('sandbox','allow-scripts'); fr.setAttribute('allow','fullscreen'); fr.setAttribute('allowfullscreen',''); fr.title=f.name; fr.srcdoc=html; body.replaceChildren(fr); setTimeout(()=>fr.focus(),300); }
     else { const blob=new Blob([Uint8Array.from(atob(f.base64),c=>c.charCodeAt(0))],{type:f.mime}); const url=URL.createObjectURL(blob);
       const el = f.mime.startsWith('image/') ? Object.assign(document.createElement('img'),{src:url,alt:f.name}) : Object.assign(document.createElement('iframe'),{src:url,title:f.name});
