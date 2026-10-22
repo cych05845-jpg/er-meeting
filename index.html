@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>急診會議整合資料</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<script src="/account/edauth.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+/* Layout: 頂部品牌列＋分頁列；首頁為「本月會議」主卡＋公告／投票／提議／決議四區；其他分頁單欄。最寬 1180px。 */
+:root{
+  --bg:#F7F4EF; --surface:#FFFFFE; --line:#E6DED4; --fg:#1F3A3E; --fg-2:#4D5C5A; --fg-3:#7D8784;
+  --accent:#CF4A3A; --accent-soft:#FBE3DD; --ink:#1E5A64; --ink-2:#2A7380; --ink-fg:#F6F8F7; --ink-mute:#CFE6E8;
+  --ok:#2878C0; --ok-soft:#DFECF8; --warn:#A8640F; --warn-soft:#F8E8CF; --teal:#1F7A6E; --teal-soft:#DDF0EC;
+  --f:"Microsoft JhengHei","微軟正黑體","PingFang TC","Noto Sans TC",sans-serif;
+  --r:16px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121A1C; --surface:#1A2527; --line:#2C3A3C; --fg:#E8EEEC; --fg-2:#B9C6C3; --fg-3:#8A9895;
+  --accent:#F08A7C; --accent-soft:#3D2420; --ink:#174850; --ink-2:#1F5C66; --ink-fg:#EEF5F4; --ink-mute:#AFCFD3;
+  --ok:#8DBDEB; --ok-soft:#1B2C3C; --warn:#E8B867; --warn-soft:#352915; --teal:#7FD1C2; --teal-soft:#16302C; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121A1C; --surface:#1A2527; --line:#2C3A3C; --fg:#E8EEEC; --fg-2:#B9C6C3; --fg-3:#8A9895;
+  --accent:#F08A7C; --accent-soft:#3D2420; --ink:#174850; --ink-2:#1F5C66; --ink-fg:#EEF5F4; --ink-mute:#AFCFD3;
+  --ok:#8DBDEB; --ok-soft:#1B2C3C; --warn:#E8B867; --warn-soft:#352915; --teal:#7FD1C2; --teal-soft:#16302C; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--f);font-size:16px;line-height:1.6}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--ink)}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:var(--ink-2)}
+.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--ink);color:var(--ink-fg);box-shadow:0 2px 12px rgba(0,0,0,.08)}
+.hrow{display:flex;align-items:center;gap:16px;min-height:56px;padding-block:6px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:19px;letter-spacing:.03em;flex:1;min-width:0}
+.brand .mark{width:34px;height:34px;border-radius:10px;background:var(--accent);display:grid;place-items:center;flex:none}
+.brand small{display:block;font-weight:400;font-size:12px;letter-spacing:.14em;color:var(--ink-mute)}
+.who{font-size:14px;display:flex;gap:10px;align-items:center;color:var(--ink-mute)}
+.who button{background:transparent;border:1px solid rgba(255,255,255,.3);color:var(--ink-fg);border-radius:999px;padding:3px 12px;cursor:pointer}
+nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin-bottom:-1px}
+nav::-webkit-scrollbar{display:none}
+nav a{color:var(--ink-mute);text-decoration:none;padding:9px 14px 11px;white-space:nowrap;border-bottom:3px solid transparent;display:flex;gap:6px;align-items:center}
+nav a:hover{color:var(--ink-fg)}
+nav a[aria-current="page"]{color:var(--ink-fg);border-bottom-color:var(--accent);font-weight:700}
+nav .badge{background:var(--accent);color:#fff;border-radius:999px;font-size:11px;padding:0 6px;line-height:17px;font-weight:700}
+main{padding-block:26px 72px}
+h1{font-size:28px;line-height:1.3;margin:0;text-wrap:balance}
+h2{font-size:19px;margin:0;line-height:1.35}
+h3{font-size:16px;margin:0}
+.eyebrow{font-size:12.5px;letter-spacing:.16em;color:var(--accent);font-weight:700}
+.muted{color:var(--fg-3)}
+.small{font-size:14px}
+.stack{display:flex;flex-direction:column;gap:16px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.between{justify-content:space-between}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;min-width:0}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:12px}
+.sec-head a{font-size:14px;text-decoration:none}
+.banner{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:10px 14px;font-size:14px}
+.page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+/* 首頁 */
+.hero{background:var(--ink);color:var(--ink-fg);border:none;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:center;padding:26px 28px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-60px;top:-60px;width:240px;height:240px;border-radius:50%;border:28px solid rgba(255,255,255,.06);pointer-events:none}
+.hero .eyebrow{color:#FFB59C}
+.hero h1{font-size:30px}
+.hero .meta{color:var(--ink-mute);font-size:15px}
+.hero .facts{display:flex;gap:22px;flex-wrap:wrap;margin-top:14px}
+.hero .facts div{display:flex;flex-direction:column}
+.hero .facts b{font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
+.hero .facts span{font-size:13px;color:var(--ink-mute)}
+.dash{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px}
+@media (max-width:860px){.dash{grid-template-columns:1fr}.hero{grid-template-columns:1fr}}
+/* 公告 */
+.ann{display:grid;grid-template-columns:58px minmax(0,1fr);gap:14px;padding:14px 0;border-top:1px solid var(--line)}
+.ann:first-child{border-top:none;padding-top:2px}
+.date{width:58px;border-radius:10px;overflow:hidden;text-align:center;border:1px solid var(--line);background:var(--surface);align-self:start}
+.date .m{background:var(--accent);color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.06em;padding:2px 0}
+.date .d{font-size:22px;font-weight:700;line-height:1.35;font-variant-numeric:tabular-nums}
+.date .w{font-size:11px;color:var(--fg-3);padding-bottom:3px}
+.date.none .m{background:var(--fg-3)}
+.ann h3{font-size:16.5px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ann p{margin:3px 0 0;color:var(--fg-2);font-size:15px;white-space:pre-wrap}
+.pin{font-size:12px;color:var(--accent);font-weight:700}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{font-size:12.5px;padding:1px 9px;border-radius:999px;background:var(--bg);color:var(--fg-2);border:1px solid var(--line);white-space:nowrap;font-weight:500}
+.chip.hot{background:var(--accent-soft);color:var(--accent);border-color:transparent}
+.chip.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
+.chip.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.chip.teal{background:var(--teal-soft);color:var(--teal);border-color:transparent}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 14px;cursor:pointer;font-size:14.5px}
+.filters button[aria-pressed="true"]{background:var(--ink);color:var(--ink-fg);border-color:var(--ink)}
+/* 按鈕與表單 */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 16px;cursor:pointer;text-decoration:none;color:var(--fg);font-size:15px}
+.btn:hover{border-color:var(--ink-2)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.light{background:var(--ink-fg);border-color:var(--ink-fg);color:var(--ink)}
+.btn.big{padding:12px 22px;font-size:16.5px;font-weight:700}
+.btn[disabled]{opacity:.55;cursor:default}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--fg-2);min-width:0}
+input,select,textarea{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px;width:100%}
+textarea{min-height:90px;resize:vertical}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.check{display:flex;gap:8px;align-items:center;font-size:14.5px;color:var(--fg-2)}
+.check input{width:auto}
+/* 會議列表 */
+.year{font-size:13px;color:var(--fg-3);letter-spacing:.14em;font-weight:700;margin-top:6px}
+.mlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.mcard{display:flex;flex-direction:column;gap:8px;text-decoration:none;color:inherit;transition:border-color .15s,transform .15s}
+.mcard:hover{border-color:var(--ink-2);transform:translateY(-2px)}
+.mcard .mon{font-size:32px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.mcard .mon span{font-size:14px;color:var(--fg-3);font-weight:400;margin-left:6px}
+.mcard p{margin:0;color:var(--fg-2);font-size:14.5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.report-hero{display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--ink);color:var(--ink-fg);border:none}
+.report-hero .t{font-size:19px;font-weight:700}
+.report-hero .muted{color:var(--ink-mute)}
+.files .file{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
+.files .file:first-child{border-top:none}
+.file .n{flex:1;min-width:0;overflow-wrap:anywhere}
+/* 表格 */
+.tbl{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:10px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:12.5px;color:var(--fg-3);font-weight:700;letter-spacing:.06em;white-space:nowrap}
+td.item{min-width:220px}
+/* 投票 */
+.poll .opt{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.bar{position:relative;height:40px;border-radius:10px;background:var(--bg);overflow:hidden;display:flex;align-items:center;padding:0 12px;border:1px solid var(--line)}
+.bar i{position:absolute;inset:0 auto 0 0;background:var(--accent-soft);transition:width .6s ease}
+.bar>span{position:relative;display:flex;justify-content:space-between;width:100%;font-variant-numeric:tabular-nums;gap:10px}
+.bar>span>b{white-space:nowrap}
+.bar.win span b{color:var(--accent)}
+.vote-btns{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.vote-btns .btn{flex:1;min-width:120px;padding:12px 16px;font-weight:700}
+/* 提議 */
+.prop{display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px;padding:16px 0;border-top:1px solid var(--line)}
+.prop:first-child{border-top:none;padding-top:2px}
+.second{display:flex;flex-direction:column;align-items:center;gap:2px;border:1px solid var(--line);border-radius:12px;padding:8px 0;background:var(--surface);cursor:pointer;align-self:start;width:64px}
+.second b{font-size:20px;line-height:1;font-variant-numeric:tabular-nums}
+.second span{font-size:12px;color:var(--fg-3)}
+.second[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.second[aria-pressed="true"] b,.second[aria-pressed="true"] span{color:var(--accent)}
+.prop p{margin:4px 0 0;color:var(--fg-2);font-size:15px;white-space:pre-wrap}
+.reply{margin-top:8px;background:var(--bg);border-radius:10px;padding:8px 12px;font-size:14.5px;color:var(--fg-2)}
+.reply b{color:var(--ink-2)}
+.statbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.statbar div{background:var(--bg);border-radius:10px;padding:10px 12px}
+.statbar b{display:block;font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums}
+.statbar span{font-size:13px;color:var(--fg-3)}
+.login{max-width:400px;margin:7vh auto 0}
+.err{color:var(--accent);font-size:14px;min-height:1.4em}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--ink-fg);padding:10px 18px;border-radius:999px;z-index:30;font-size:15px;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+#viewer{position:fixed;inset:0;z-index:40;background:#0e1516;display:flex;flex-direction:column}
+#viewer .vbar{display:flex;align-items:center;gap:12px;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));color:#E8EEEC;margin-top:env(safe-area-inset-top,0px)}
+#viewer .vbar b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#viewer .vbar button{background:transparent;color:#E8EEEC;border:1px solid #3b4b4c;border-radius:999px;padding:5px 14px;cursor:pointer}
+#viewer iframe,#viewer img{flex:1;width:100%;border:0;background:#2b3538;object-fit:contain;min-height:0}
+.learn{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center}
+.qrbox{background:#fff;padding:10px;border-radius:12px;border:1px solid var(--line);line-height:0;width:max-content}
+.qrbox img,.qrbox canvas{display:block}
+.hbtn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:var(--ink-fg);border-radius:999px;padding:4px 12px;cursor:pointer;font-size:14px;white-space:nowrap}
+#qrModal{position:fixed;inset:0;z-index:45;background:rgba(10,20,22,.82);display:flex;align-items:center;justify-content:center;padding:16px}
+#qrModal .panel{background:var(--surface);color:var(--fg);border-radius:20px;padding:28px;max-width:min(560px,100%);width:100%;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
+#qrModal .qrbox{padding:16px}
+#qrModal .url{font-size:15px;color:var(--fg-2);overflow-wrap:anywhere}
+.empty{padding:22px;text-align:center;color:var(--fg-3)}
+@media (max-width:560px){.statbar{grid-template-columns:repeat(2,minmax(0,1fr))}.hero h1{font-size:25px}.who span{display:none}}
+@media (prefers-reduced-motion:reduce){.mcard,.bar i{transition:none}}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="hrow">
+    <div class="brand"><span class="mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#fff" d="M9.5 3h5v6.5H21v5h-6.5V21h-5v-6.5H3v-5h6.5z"/></svg></span>
+      <span>急診會議整合資料<small>ER MEETING HUB</small></span></div>
+    <button type="button" class="hbtn" id="learnBtn" aria-haspopup="dialog">ER-Learn QR</button>
+    <div class="who" id="who"></div>
+  </div>
+  <nav id="nav" aria-label="主選單"></nav>
+</div></header>
+<main class="wrap" id="app"></main>
+<div id="qrModal" hidden role="dialog" aria-modal="true" aria-labelledby="qrTitle">
+  <div class="panel"><div class="eyebrow">教學資源</div><h1 id="qrTitle" style="font-size:26px">ER-Learn 急診學習網</h1>
+    <p class="muted" style="margin:0">用手機相機掃描即可開啟，適合課堂與示範時投影</p>
+    <div class="qrbox" id="qrBig"></div>
+    <div class="url" id="qrUrl"></div>
+    <div class="row" style="justify-content:center"><a class="btn primary" id="qrOpen" target="_blank" rel="noopener">開啟網站</a><button class="btn" type="button" id="qrCopy">複製連結</button><button class="btn" type="button" id="qrFs">全螢幕投影</button><button class="btn" type="button" id="qrClose">關閉</button></div>
+  </div></div>
+<div id="viewer" hidden>
+  <div class="vbar"><b id="vtitle"></b><button type="button" id="vfs">全螢幕</button><button type="button" id="vclose">關閉</button></div>
+  <div id="vbody" style="flex:1;display:flex;min-height:0"></div>
+</div>
+
+<script>
+/* ===== 設定：部署 GAS 後把網址貼到 API_URL；留空＝示範模式 ===== */
+const CONFIG = {
+  API_URL: 'https://script.google.com/macros/s/AKfycbx8HViEQEVPnJhGWogNhtGeFMc8N8So9p8FkpBivf6VBHo4StmLR8VrxZZwAdzPhb34wQ/exec',   // 本系統 GAS 網址；留空＝示範模式。登入一律走 ED 帳號中心（/account/edauth.js，系統代碼 meeting）
+  LEARN_URL: 'https://cych05845-jpg.github.io/er-learn/'   // ER-Learn 網址，請確認
+};
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const DEMO = !CONFIG.API_URL;
+const STATUS = ['未開始','進行中','持續追蹤','已完成'];
+const ANN_CATS = ['行政','教研','品管','單位活動','課程','其他'];
+const PROP_CATS = ['會議議題','流程改善','設備與環境','教育訓練','福利與活動','其他'];
+const PROP_STATUS = ['待審閱','排入議程','已討論','已採納','暫不採納'];
+const catChip = c => `<span class="chip ${({'行政':'ok','教研':'teal','品管':'hot','單位活動':'warn','課程':'teal'})[c]||''}">${esc(c)}</span>`;
+const statusChip = s => `<span class="chip ${s==='已完成'?'ok':s==='進行中'||s==='持續追蹤'?'warn':'hot'}">${esc(s)}</span>`;
+const propChip = s => `<span class="chip ${({'待審閱':'','排入議程':'warn','已討論':'teal','已採納':'ok','暫不採納':''})[s]}">${esc(s)}</span>`;
+const store = { get(k){try{return JSON.parse(localStorage.getItem(k))}catch(_){return null}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}}, del(k){try{localStorage.removeItem(k)}catch(_){}} };
+let session = null;
+const WD = '日一二三四五六';
+function dateTile(d){
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d||'');
+  if(!m) return `<div class="date none" aria-hidden="true"><div class="m">公告</div><div class="d">・</div><div class="w">&nbsp;</div></div>`;
+  const dt = new Date(+m[1], +m[2]-1, +m[3]);
+  return `<div class="date" aria-label="${+m[2]}月${+m[3]}日"><div class="m">${+m[2]}月</div><div class="d">${+m[3]}</div><div class="w">週${WD[dt.getDay()]}</div></div>`;
+}
+function toast(msg){const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2400)}
+function fileB64(f){ return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=rej;r.readAsDataURL(f)}); }
+
+async function api(action, body={}){
+  if (DEMO) return mock(action, body);
+  const j = await EDAuth.api(CONFIG.API_URL, {action, ...body});   // 自動帶帳號中心 token；過期會跳出登入後重送
+  if (!j.ok) throw new Error(j.error === 'FORBIDDEN' ? '沒有權限' : j.error);
+  return j.data;
+}
+
+/* ===== 示範模式資料（僅供預覽；正式版資料存在 Google 試算表） ===== */
+const M = {
+  meetings:[
+    {meeting_id:'2026-10',date:'2026-10-22',title:'10月急診護理單位會議',status:'published',summary:'9月業務量回升並居嘉義第一；24/48小時留置、72小時返診未達標，內科ICU滿床致轉ICU延遲22件。本期異常事件：8/6 病人辨識跡近錯失；顧客反應：DAMA 移除留置針皮膚撕裂。'},
+    {meeting_id:'2026-08',date:'2026-08-27',title:'8月急診護理單位會議',status:'published',summary:'1–7月業務量與品質指標、異常事件統計、申訴與讚美、2026年度計畫與時間線、OT時數規範、自備藥與供應室宣導。'}
+  ],
+  attachments:[
+    {att_id:'A1',meeting_id:'2026-10',name:'2026年10月 會議報告',mime:'text/html',kind:'會議報告',demo_url:'reports/2026-10.html'},
+    {att_id:'A2',meeting_id:'2026-10',name:'202609 急診品質指標暨業務報告.pdf',mime:'application/pdf',kind:'附件'},
+    {att_id:'A3',meeting_id:'2026-08',name:'2026.08.27 會議簡報.pdf',mime:'application/pdf',kind:'會議報告'}
+  ],
+  announcements:[
+    {ann_id:'N1',meeting_id:'2026-10',category:'單位活動',title:'感恩節火雞感恩餐會',body:'請中午預留時間一起參與。地點：[__]',event_date:'2026-11-26',pinned:'yes'},
+    {ann_id:'N2',meeting_id:'2026-10',category:'課程',title:'Cochrane × AI 實證運用課程',body:'下午 3:00',event_date:'2026-10-28',pinned:''},
+    {ann_id:'N3',meeting_id:'2026-10',category:'教研',title:'單位品質改善案書面報告繳交',body:'12/31 前 mail 研究發展組副組長（OPD 秋楓護理長），進度需至「專案完成」。',event_date:'2026-12-31',pinned:'yes'},
+    {ann_id:'N4',meeting_id:'2026-10',category:'行政',title:'感恩茶會（友善小組）',body:'早場 9:00–10:00／愛的加油站表揚 13:30–14:00（邀請院長）／中場 14:00–15:00／晚場 16:30–17:30',event_date:'2026-11-24',pinned:''},
+    {ann_id:'N5',meeting_id:'2026-10',category:'行政',title:'感恩蛋糕發放',body:'8:00–10:00，阿默馬卡龍',event_date:'2026-11-26',pinned:''},
+    {ann_id:'N6',meeting_id:'2026-10',category:'教研',title:'嘉基護理科學與人文發表會',body:'整天，國際會議廳。請預留時間、鼓勵參與。',event_date:'2026-11-26',pinned:''},
+    {ann_id:'N7',meeting_id:'2026-10',category:'品管',title:'病安訪查',body:'',event_date:'2026-11-16',pinned:''},
+    {ann_id:'N8',meeting_id:'2026-10',category:'教研',title:'COPD 疾病照護認證',body:'',event_date:'2026-12-10',pinned:''},
+    {ann_id:'N9',meeting_id:'2026-10',category:'教研',title:'急重症護理臨床照護品質創意競賽截止',body:'專案與個案報告，投稿至急重症護理學會網站，結果預計 12 月公告。',event_date:'2026-10-31',pinned:''}
+  ],
+  decisions:[
+    {dec_id:'D1',meeting_id:'2026-10',item:'檢查單交付前落實姓名＋病歷號雙重辨識，8/6 案例納入單位案例教育',owner:'[__]',due:'',status:'進行中',note:''},
+    {dec_id:'D2',meeting_id:'2026-10',item:'躁動病人移除留置針：先評估皮膚、確實固定、說明後執行、拔針後確認',owner:'[__]',due:'',status:'已完成',note:'已於急診案例討論及交班宣導'},
+    {dec_id:'D3',meeting_id:'2026-10',item:'決定下半年度關懷活動對象（育幼院／晨光）',owner:'翁秀霞 護理長',due:'',status:'未開始',note:'見本月投票'},
+    {dec_id:'D4',meeting_id:'2026-10',item:'單位品質改善案書面報告（進度至「專案完成」）',owner:'[__]',due:'2026-12-31',status:'進行中',note:''},
+    {dec_id:'D5',meeting_id:'2026-08',item:'儀器定位：資訊室安裝網點',owner:'[__]',due:'',status:'持續追蹤',note:''}
+  ],
+  proposals:[
+    {prop_id:'R1',title:'（示範）提議範例：交班前宣讀當日必看事項',body:'這是示範用的提議，正式版會顯示同仁提出的內容。',category:'流程改善',proposer:'不具名',status:'待審閱',meeting_id:'',reply:'',created_at:'2026-10-20',seconds:3,seconded:false}
+  ],
+  minutes:{},
+  polls:[{poll_id:'P1',meeting_id:'2026-10',question:'下半年度關懷活動對象',options:['育幼院','晨光'],close_at:'2026-11-15',open:true,voted:false,total:0,_votes:[0,0]}]
+};
+async function mock(action, b){
+  await new Promise(r=>setTimeout(r,120));
+  const pv = p => ({...p,counts:(p.voted||!p.open||true)?p._votes:null});
+  switch(action){
+    case 'listMeetings': return M.meetings.map(m=>({...m,n_files:M.attachments.filter(a=>a.meeting_id===m.meeting_id).length,n_open:M.decisions.filter(d=>d.meeting_id===m.meeting_id&&d.status!=='已完成').length,n_polls_open:M.polls.filter(p=>p.meeting_id===m.meeting_id&&p.open).length})).sort((a,b)=>b.meeting_id.localeCompare(a.meeting_id));
+    case 'getMeeting': { const m=M.meetings.find(x=>x.meeting_id===b.meeting_id); if(!m) throw new Error('找不到這次會議');
+      return {meeting:m,attachments:M.attachments.filter(a=>a.meeting_id===m.meeting_id),decisions:M.decisions.filter(d=>d.meeting_id===m.meeting_id),polls:M.polls.filter(p=>p.meeting_id===m.meeting_id).map(pv)}; }
+    case 'getFile': { const a=M.attachments.find(x=>x.att_id===b.att_id); if(!a?.demo_url) throw new Error('示範模式沒有這個檔案，正式版會從雲端硬碟讀取');
+      return {name:a.name,mime:a.mime,text:await (await fetch(a.demo_url)).text()}; }
+    case 'listDecisions': return [...M.decisions].sort((a,b)=>b.meeting_id.localeCompare(a.meeting_id));
+    case 'listAnnouncements': return [...M.announcements].sort((a,b)=>((b.pinned==='yes')-(a.pinned==='yes'))||String(a.event_date).localeCompare(String(b.event_date)));
+    case 'saveAnnouncement': { const a={...b.announcement,ann_id:b.announcement.ann_id||'N'+Date.now(),pinned:b.announcement.pinned?'yes':''}; const i=M.announcements.findIndex(x=>x.ann_id===a.ann_id); i>=0?M.announcements[i]=a:M.announcements.unshift(a); return a; }
+    case 'deleteAnnouncement': M.announcements=M.announcements.filter(a=>a.ann_id!==b.ann_id); return true;
+    case 'listPolls': return M.polls.map(pv).sort((a,b)=>(b.open-a.open));
+    case 'listProposals': return [...M.proposals];
+    case 'submitProposal': { const p={prop_id:'R'+Date.now(),...b.proposal,proposer:b.proposal.anonymous?'不具名':session.name,status:'待審閱',meeting_id:'',reply:'',created_at:new Date().toISOString().slice(0,10),seconds:0,seconded:false}; M.proposals.unshift(p); return p; }
+    case 'updateProposal': { const p=M.proposals.find(x=>x.prop_id===b.proposal.prop_id); Object.assign(p,b.proposal); return true; }
+    case 'second': { const p=M.proposals.find(x=>x.prop_id===b.prop_id); p.seconded=!p.seconded; p.seconds+=p.seconded?1:-1; return {...p}; }
+    case 'saveMeeting': { const i=M.meetings.findIndex(x=>x.meeting_id===b.meeting.meeting_id); i>=0?M.meetings[i]={...M.meetings[i],...b.meeting}:M.meetings.push(b.meeting); return b.meeting; }
+    case 'saveDecision': { const d={...b.decision,dec_id:b.decision.dec_id||'D'+Date.now()}; const i=M.decisions.findIndex(x=>x.dec_id===d.dec_id); i>=0?M.decisions[i]=d:M.decisions.push(d); return d; }
+    case 'savePoll': { const p={poll_id:'P'+Date.now(),...b.poll,options:b.poll.options.map(s=>s.trim()).filter(Boolean),open:true,voted:false,total:0}; p._votes=p.options.map(()=>0); M.polls.push(p); return p; }
+    case 'uploadFile': throw new Error('示範模式不能上傳，部署後即可使用');
+    case 'vote': { const p=M.polls.find(x=>x.poll_id===b.poll_id); if(p.voted) throw new Error('您已投過票'); p._votes[p.options.indexOf(b.option)]++; p.total++; p.voted=true; return pv(p); }
+    case 'getMinutes': return {can_edit:true, minutes:M.minutes[b.meeting_id]||null};
+    case 'saveMinutes': M.minutes[b.meeting_id]={...(M.minutes[b.meeting_id]||{status:'draft'}),...b.minutes}; return {can_edit:true,minutes:M.minutes[b.meeting_id]};
+    case 'uploadAudio': throw new Error('示範模式不能上傳錄音，可改用「貼上筆記」試試');
+    case 'summarize': { await new Promise(r=>setTimeout(r,900));
+      M.minutes[b.meeting_id]={header:b.header,status:'draft',followups:[{item:'下半年度關懷活動對象依投票結果辦理',owner:'[__]',due:''},{item:'8/6 病人辨識案例納入單位案例教育',owner:'[__]',due:''}],
+        body:`（示範：AI 依筆記產生的草稿格式）\n一、上次會議追蹤\n議題1.儀器定位系統安裝網點\n決議：資訊室安裝中，持續追蹤。\n\n二、本次會議報告事項\n1.護理長報告\n (1)9月業務量：急診服務量7,312人次，較去年同期增加4.4%，居嘉義第一。\n (2)品質指標：24小時與48小時留置、72小時返診未達標；轉ICU超過6小時22件，主因內科ICU滿床。\n (3)異常事件報告：\n 說明：8/6 病人A檢查單誤置，CT室執行前核對攔截（跡近錯失）。\n 討論：甲員：〔依筆記內容〕\n 決議：檢查單交付前落實姓名＋病歷號雙重辨識，納入單位案例教育。\n2.各組報告：無\n3.本次討論事項\n議題1.下半年度關懷活動對象（提案人：護理長）\n 說明：育幼院或晨光二選一。\n 討論：〔依筆記內容〕\n 決議：依網站投票結果辦理。\n4.「病人照顧需求」問題討論：無\n5.臨時動議：無\n\n下次會議追蹤事項\n1.關懷活動依投票結果辦理（負責人：〔待填〕）`};
+      return {can_edit:true,minutes:M.minutes[b.meeting_id]}; }
+    case 'approveMinutes': { const mi=M.minutes[b.meeting_id]; mi.status='published'; (b.add_followups||[]).forEach(f=>M.decisions.push({dec_id:'D'+Math.random(),meeting_id:b.meeting_id,...f,status:'未開始',note:''})); return {can_edit:true,minutes:mi}; }
+  }
+  throw new Error('示範模式不支援 '+action);
+}
+
+/* ===== 路由與外框 ===== */
+const isAdmin = () => ['admin','hn','ahn'].includes(String(session?.role||'').toLowerCase());
+const route = () => (location.hash.replace(/^#\/?/,'')||'home').split('/');
+addEventListener('hashchange', render);
+let navBadges = {};
+function chrome(){
+  const r = route()[0];
+  const links = [['home','本月會議'],['news','公告'],['records','會議紀錄'],['polls','投票'],['proposals','提議'],['decisions','決議追蹤']].concat(isAdmin()?[['admin','管理']]:[]);
+  const cur = r==='m' ? 'records' : r;
+  $('#nav').innerHTML = session ? links.map(([k,t])=>`<a href="#/${k}" ${cur===k?'aria-current="page"':''}>${t}${navBadges[k]?`<span class="badge">${navBadges[k]}</span>`:''}</a>`).join('') : '';
+  $('#nav').hidden = !session;
+  $('#who').innerHTML = session ? `<span>${esc(session.name)}</span>${DEMO?'':'<button type="button" id="chpin">變更 PIN</button><a class="hbtn" style="text-decoration:none" href="/account/">帳號中心</a>'}<button type="button" id="logout">登出</button>` : '';
+  if (!session) return;
+  $('#logout').onclick = () => DEMO ? toast('示範模式不需登出') : EDAuth.logout();
+  const cp = $('#chpin'); if (cp) cp.onclick = () => EDAuth.changePin().then(()=>toast('已變更 PIN')).catch(()=>{});
+}
+async function render(){
+  chrome();
+  const app = $('#app');
+  if (!session) { app.innerHTML = `<div class="card login stack"><div class="eyebrow">ER MEETING HUB</div><h1>登入急診會議整合資料</h1><p class="muted" style="margin:0">請使用 ED 帳號中心的員工編號與 PIN 登入。</p>${!DEMO && !window.EDAuth ? '<div class="err">登入模組載入失敗，請確認帳號中心網站（/account/）可以開啟。</div>' : ''}</div>`; return; }
+  const [r, a] = route();
+  app.innerHTML = `<div class="empty">載入中…</div>`;
+  try {
+    if (r==='m' && a) await renderMeeting(app, a);
+    else if (r==='news') await renderNews(app);
+    else if (r==='records') await renderRecords(app);
+    else if (r==='polls') await renderPolls(app);
+    else if (r==='proposals') await renderProposals(app);
+    else if (r==='decisions') await renderDecisions(app);
+    else if (r==='admin' && isAdmin()) await renderAdmin(app);
+    else await renderHome(app);
+  } catch(e){ app.innerHTML = `<div class="card">${esc(e.message)}</div>`; }
+  window.scrollTo(0,0);
+}
+const demoBanner = () => DEMO ? `<div class="banner">示範模式：資料為範例，投票、提議與編輯不會保存。部署 Google Apps Script 後會改用正式資料。</div>` : '';
+const pageHead = (eyebrow, title, extra='') => `<div class="page-head"><div><div class="eyebrow">${eyebrow}</div><h1>${title}</h1></div>${extra}</div>`;
+
+/* ===== 首頁：本月會議 ===== */
+async function renderHome(app){
+  const [meetings, anns, polls, props, decs] = await Promise.all([api('listMeetings'), api('listAnnouncements'), api('listPolls'), api('listProposals'), api('listDecisions')]);
+  const m = meetings[0];
+  const openPolls = polls.filter(p=>p.open);
+  navBadges = {polls: openPolls.filter(p=>!p.voted).length || 0};
+  chrome();
+  let detail = null, report = null;
+  if (m) { detail = await api('getMeeting',{meeting_id:m.meeting_id}); report = detail.attachments.find(a=>a.kind==='會議報告'); }
+  const openDec = decs.filter(d=>d.status!=='已完成');
+  const today = new Date().toISOString().slice(0,10);
+  const upcoming = anns.filter(a=>a.pinned==='yes' || !a.event_date || a.event_date>=today).slice(0,5);
+  app.innerHTML = `<div class="stack">${demoBanner()}
+    ${m ? `<section class="card hero"><div>
+        <div class="eyebrow">本月會議</div><h1>${esc(m.title)}</h1>
+        <div class="meta">會議日期 ${esc(m.date)}</div>
+        <div class="facts"><div><b>${anns.length}</b><span>則公告</span></div><div><b>${openPolls.length}</b><span>項投票進行中</span></div><div><b>${openDec.length}</b><span>項決議追蹤中</span></div><div><b>${props.filter(p=>p.status==='待審閱'||p.status==='排入議程').length}</b><span>則提議待處理</span></div></div>
+      </div>
+      <div class="row">${report?`<button class="btn light big" type="button" data-open="${esc(report.att_id)}">▶ 觀看會議報告</button>`:''}<a class="btn big" style="background:transparent;color:var(--ink-fg);border-color:rgba(255,255,255,.35)" href="#/m/${esc(m.meeting_id)}">會議紀錄與資料</a></div>
+    </section>` : `<div class="card empty">還沒有會議資料</div>`}
+    <div class="dash">
+      <section class="card"><div class="sec-head"><h2>最新公告</h2><a href="#/news">全部公告 →</a></div>
+        <div>${upcoming.map(annItem).join('') || '<div class="empty">目前沒有公告</div>'}</div></section>
+      <div class="stack">
+        <section class="card"><div class="sec-head"><h2>投票</h2><a href="#/polls">全部投票 →</a></div>
+          <div id="homePolls">${openPolls.length? openPolls.slice(0,2).map(p=>pollCard(p,true)).join('') : '<div class="empty">目前沒有進行中的投票</div>'}</div></section>
+        <section class="card"><div class="sec-head"><h2>提議</h2><a href="#/proposals">我要提議 →</a></div>
+          ${props.slice(0,3).map(p=>`<div class="row between" style="padding:6px 0;border-top:1px solid var(--line)"><span style="min-width:0;flex:1">${esc(p.title)}</span>${propChip(p.status)}<span class="small muted">附議 ${p.seconds}</span></div>`).join('') || '<div class="empty">還沒有提議</div>'}
+        </section>
+    <section class="card learn"><div class="qrbox" id="qrSmall"></div><div class="stack" style="gap:6px"><div class="eyebrow">教學資源</div><h2>ER-Learn 急診學習網</h2>
+      <p class="muted small" style="margin:0">會議教學、新人示範時，請同仁掃描 QR 進入。點「投影 QR」可放大給全場掃描。</p>
+      <div class="row"><button class="btn primary" type="button" data-learn>投影 QR</button><a class="btn" href="${esc(CONFIG.LEARN_URL)}" target="_blank" rel="noopener">開啟網站</a></div></div></section>
+      </div>
+    </div>
+    <section class="card"><div class="sec-head"><h2>決議追蹤</h2><a href="#/decisions">完整清單 →</a></div>
+      <div class="statbar">${STATUS.map(s=>`<div><b>${decs.filter(d=>d.status===s).length}</b><span>${s}</span></div>`).join('')}</div>
+      <div style="margin-top:12px">${decTable(openDec.slice(0,4), true)}</div></section>
+  </div>`;
+  app.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openFile(b.dataset.open));
+  app.querySelectorAll('[data-learn]').forEach(b=>b.onclick=openLearn);
+  drawQR($('#qrSmall'), 132);
+  bindPolls(app);
+}
+
+/* ===== ER-Learn QR ===== */
+function drawQR(el, size){
+  if (!el) return;
+  el.innerHTML = '';
+  if (window.QRCode) new QRCode(el, {text:CONFIG.LEARN_URL, width:size, height:size, colorDark:'#1E5A64', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M});
+  else el.innerHTML = `<div style="width:${size}px;height:${size}px;display:grid;place-items:center;color:#555;font-size:13px;line-height:1.4;padding:8px">QR 載入失敗<br>請用下方連結</div>`;
+}
+function openLearn(){
+  const m = $('#qrModal'); m.hidden = false;
+  drawQR($('#qrBig'), Math.min(360, window.innerWidth - 120));
+  $('#qrUrl').textContent = CONFIG.LEARN_URL; $('#qrOpen').href = CONFIG.LEARN_URL;
+  $('#qrClose').focus();
+}
+$('#learnBtn').onclick = openLearn;
+$('#qrClose').onclick = () => { $('#qrModal').hidden = true; if (document.fullscreenElement) document.exitFullscreen().catch(()=>{}); };
+$('#qrModal').addEventListener('click', e => { if (e.target.id === 'qrModal') $('#qrClose').click(); });
+$('#qrCopy').onclick = async () => { try { await navigator.clipboard.writeText(CONFIG.LEARN_URL); toast('已複製連結'); } catch(_) { const r=document.createRange(); r.selectNodeContents($('#qrUrl')); const s=getSelection(); s.removeAllRanges(); s.addRange(r); toast('請按 Ctrl+C 複製'); } };
+$('#qrFs').onclick = () => { try { $('#qrModal').requestFullscreen().then(()=>drawQR($('#qrBig'), Math.min(innerHeight, innerWidth) - 260)).catch(()=>{}); } catch(_){} };
+
+/* ===== 公告 ===== */
+function annItem(a){
+  return `<div class="ann">${dateTile(a.event_date)}<div style="min-width:0">
+    <h3>${a.pinned==='yes'?'<span class="pin">置頂</span>':''}${esc(a.title)}${catChip(a.category)}</h3>
+    ${a.body?`<p>${esc(a.body)}</p>`:''}</div></div>`;
+}
+async function renderNews(app){
+  const anns = await api('listAnnouncements');
+  let cat = '全部';
+  const draw = () => {
+    const list = anns.filter(a=>cat==='全部'||a.category===cat);
+    $('#annList').innerHTML = list.map(annItem).join('') || '<div class="empty">這個分類沒有公告</div>';
+    app.querySelectorAll('.filters button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.f===cat));
+  };
+  const cats = ['全部', ...ANN_CATS.filter(c=>anns.some(a=>a.category===c))];
+  app.innerHTML = `<div class="stack">${demoBanner()}${pageHead('公告','會議宣導與重要日程', isAdmin()?'<a class="btn primary" href="#/admin">＋ 發布公告</a>':'')}
+    <div class="filters">${cats.map(c=>`<button type="button" data-f="${c}">${c}</button>`).join('')}</div>
+    <section class="card" id="annList"></section></div>`;
+  app.querySelectorAll('.filters button').forEach(b=>b.onclick=()=>{cat=b.dataset.f;draw()});
+  draw();
+}
+
+/* ===== 會議紀錄列表與單次會議 ===== */
+async function renderRecords(app){
+  const list = await api('listMeetings');
+  const byYear = {}; list.forEach(m => (byYear[m.meeting_id.slice(0,4)] ||= []).push(m));
+  app.innerHTML = `<div class="stack">${demoBanner()}${pageHead('會議紀錄','歷次會議報告與紀錄')}
+    ${list.length? Object.keys(byYear).sort().reverse().map(y=>`<div class="year">${y} 年</div><div class="mlist">${byYear[y].map(m=>`
+      <a class="card mcard" href="#/m/${esc(m.meeting_id)}">
+        <div class="mon">${+m.meeting_id.slice(5)}月<span>${esc(m.date)}</span></div>
+        <h2>${esc(m.title)}</h2><p>${esc(m.summary)}</p>
+        <div class="chips">${m.n_files?`<span class="chip">${m.n_files} 份資料</span>`:''}${m.n_open?`<span class="chip warn">${m.n_open} 項追蹤中</span>`:''}${m.n_polls_open?`<span class="chip hot">投票進行中</span>`:''}${m.status!=='published'?'<span class="chip">草稿</span>':''}</div>
+      </a>`).join('')}</div>`).join('') : `<div class="card empty">還沒有會議資料</div>`}</div>`;
+}
+
+async function renderMeeting(app, id){
+  const d = await api('getMeeting',{meeting_id:id});
+  const m = d.meeting;
+  const reports = d.attachments.filter(a=>a.kind==='會議報告');
+  const others = d.attachments.filter(a=>a.kind!=='會議報告');
+  app.innerHTML = `<div class="stack">${demoBanner()}
+    <div><a href="#/records">← 全部會議紀錄</a></div>
+    ${pageHead(esc(m.meeting_id.replace('-',' 年 '))+' 月', esc(m.title), isAdmin()
+      ? `<form class="row" id="dateForm"><label class="f" for="md_date" style="flex-direction:row;align-items:center;gap:8px">會議日期<input id="md_date" type="date" value="${esc(/^\d{4}-\d{2}-\d{2}$/.test(m.date)?m.date:'')}" style="width:auto"></label><button class="btn" type="submit">儲存日期</button></form>`
+      : `<span class="muted">會議日期 ${esc(m.date)}</span>`)}
+    ${reports.map(a=>`<div class="card report-hero"><div><div class="t">${esc(a.name)}</div><div class="muted">在網頁上播放，←／→ 換頁，N 鍵看講者備註</div></div>
+      <button class="btn light big" type="button" data-open="${esc(a.att_id)}">▶ 觀看會議報告</button></div>`).join('')}
+    ${m.summary?`<div class="card"><h2>重點摘要</h2><p style="margin:8px 0 0;color:var(--fg-2)">${esc(m.summary)}</p></div>`:''}
+    ${d.polls.map(p=>pollCard(p)).join('')}
+    <div class="card stack" id="minutes"><h2>會議紀錄</h2><div class="muted">載入中…</div></div>
+    <div class="card"><h2 style="margin-bottom:8px">決議與追蹤事項</h2>${decTable(d.decisions,false)}</div>
+    ${others.length?`<div class="card"><h2>其他資料</h2><div class="files">${others.map(a=>`<div class="file"><span class="chip">${esc(a.kind||'附件')}</span><span class="n">${esc(a.name)}</span><button class="btn" type="button" data-open="${esc(a.att_id)}">開啟</button></div>`).join('')}</div></div>`:''}
+  </div>`;
+  app.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openFile(b.dataset.open));
+  const df = $('#dateForm');
+  if (df) df.onsubmit = async e => { e.preventDefault(); const v=$('#md_date').value; if(!v) return toast('請選擇日期');
+    try{ await api('saveMeeting',{meeting:{...m, date:v}}); m.date=v; toast('已更新會議日期'); }catch(err){ toast(err.message); } };
+  bindPolls(app);
+  loadMinutes(id, m);
+}
+
+/* ===== 投票 ===== */
+function pollCard(p, compact){
+  const max = p.counts ? Math.max(...p.counts) : 0;
+  const pct = i => p.total ? Math.round(p.counts[i]/p.total*100) : 0;
+  return `<div class="${compact?'':'card '}poll" data-poll="${esc(p.poll_id)}">
+    <div class="row between"><h2>${esc(p.question)}</h2>
+    <span class="chip ${p.open?'hot':''}">${p.open?'進行中':'已截止'}${p.close_at?'・截止 '+esc(p.close_at):''}</span></div>
+    <div class="muted small">不記名、一人一票，系統只記錄是否投過，不記錄投給誰。已投 ${p.total} 票${compact?'':'・<a href="#/m/'+esc(p.meeting_id)+'">'+esc(p.meeting_id)+' 會議</a>'}</div>
+    ${p.counts ? `<div class="opt">${p.options.map((o,i)=>`<div class="bar ${p.counts[i]===max&&max>0?'win':''}"><i style="width:${pct(i)}%"></i><span><b>${esc(o)}</b><span>${p.counts[i]} 票・${pct(i)}%</span></span></div>`).join('')}</div>${p.voted?'<div class="muted small" style="margin-top:8px">您已投票</div>':''}` : ''}
+    ${p.open && !p.voted ? `<div class="vote-btns">${p.options.map(o=>`<button class="btn" type="button" data-vote="${esc(o)}">${esc(o)}</button>`).join('')}</div>` : ''}
+  </div>`;
+}
+function bindPolls(root){
+  root.querySelectorAll('[data-poll]').forEach(card=>{
+    card.querySelectorAll('[data-vote]').forEach(btn=>btn.onclick=async()=>{
+      card.querySelectorAll('button').forEach(x=>x.disabled=true);
+      try{ const p=await api('vote',{poll_id:card.dataset.poll,option:btn.dataset.vote}); card.outerHTML=pollCard(p, !card.classList.contains('card')); toast('已投票，謝謝！'); }
+      catch(e){ toast(e.message); card.querySelectorAll('button').forEach(x=>x.disabled=false); }
+    });
+  });
+}
+async function renderPolls(app){
+  const polls = await api('listPolls');
+  const open = polls.filter(p=>p.open), closed = polls.filter(p=>!p.open);
+  app.innerHTML = `<div class="stack">${demoBanner()}${pageHead('投票','會議投票', isAdmin()?'<a class="btn primary" href="#/admin">＋ 新增投票</a>':'')}
+    <h2>進行中</h2>${open.map(p=>pollCard(p)).join('') || '<div class="card empty">目前沒有進行中的投票</div>'}
+    ${closed.length?`<h2>已截止</h2>${closed.map(p=>pollCard(p)).join('')}`:''}</div>`;
+  bindPolls(app);
+}
+
+/* ===== 提議 ===== */
+function propItem(p){
+  return `<div class="prop" data-prop="${esc(p.prop_id)}">
+    <button type="button" class="second" aria-pressed="${p.seconded}" aria-label="附議，目前 ${p.seconds} 人"><b>${p.seconds}</b><span>${p.seconded?'已附議':'附議'}</span></button>
+    <div style="min-width:0"><div class="row"><h3 style="font-size:16.5px">${esc(p.title)}</h3>${propChip(p.status)}<span class="chip">${esc(p.category)}</span></div>
+    <div class="muted small">${esc(p.proposer||'')}・${esc(p.created_at)}${p.meeting_id?`・排入 <a href="#/m/${esc(p.meeting_id)}">${esc(p.meeting_id)} 會議</a>`:''}</div>
+    ${p.body?`<p>${esc(p.body)}</p>`:''}
+    ${p.reply?`<div class="reply"><b>護理長回覆：</b>${esc(p.reply)}</div>`:''}
+    ${isAdmin()?`<div class="grid2" style="margin-top:10px"><label class="f">處理狀態<select data-st>${PROP_STATUS.map(s=>`<option ${s===p.status?'selected':''}>${s}</option>`).join('')}</select></label>
+      <label class="f">排入會議月份<input data-mid value="${esc(p.meeting_id||'')}" placeholder="2026-11"></label>
+      <label class="f">回覆<input data-rep value="${esc(p.reply||'')}"></label></div><div style="margin-top:8px"><button class="btn" type="button" data-upd>更新</button></div>`:''}
+    </div></div>`;
+}
+function bindProps(root, list){
+  root.querySelectorAll('[data-prop]').forEach(el=>{
+    const id = el.dataset.prop;
+    el.querySelector('.second').onclick = async () => { try{ const p=await api('second',{prop_id:id}); const i=list.findIndex(x=>x.prop_id===id); list[i]={...list[i],...p}; el.outerHTML=propItem(list[i]); bindProps(root,list); }catch(e){toast(e.message)} };
+    const u = el.querySelector('[data-upd]');
+    if (u) u.onclick = async () => { const p={prop_id:id,status:el.querySelector('[data-st]').value,meeting_id:el.querySelector('[data-mid]').value.trim(),reply:el.querySelector('[data-rep]').value};
+      try{ await api('updateProposal',{proposal:p}); const i=list.findIndex(x=>x.prop_id===id); list[i]={...list[i],...p}; el.outerHTML=propItem(list[i]); bindProps(root,list); toast('已更新提議'); }catch(e){toast(e.message)} };
+  });
+}
+async function renderProposals(app){
+  const list = await api('listProposals');
+  let filter = '進行中';
+  const draw = () => {
+    const shown = list.filter(p => filter==='全部' || (filter==='進行中' ? ['待審閱','排入議程'].includes(p.status) : !['待審閱','排入議程'].includes(p.status)));
+    $('#plist').innerHTML = shown.map(propItem).join('') || '<div class="empty">沒有提議</div>';
+    bindProps($('#plist'), list);
+    app.querySelectorAll('.filters button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.f===filter));
+  };
+  app.innerHTML = `<div class="stack">${demoBanner()}${pageHead('提議','提議與臨時動議')}
+    <form class="card stack" id="pf"><h2>我要提議</h2>
+      <p class="muted small" style="margin:0">想在下次會議討論的事、流程改善或設備需求都可以提。護理長審閱後會排入議程並回覆，同仁可以附議。</p>
+      <div class="grid2"><label class="f" for="pf_t">標題<input id="pf_t" maxlength="80" required placeholder="一句話說明提議"></label>
+      <label class="f" for="pf_c">類別<select id="pf_c">${PROP_CATS.map(c=>`<option>${c}</option>`).join('')}</select></label></div>
+      <label class="f" for="pf_b">說明（現況、建議做法）<textarea id="pf_b" maxlength="2000"></textarea></label>
+      <div class="row between"><label class="check"><input type="checkbox" id="pf_a"> 不具名提出</label><button class="btn primary" type="submit">送出提議</button></div>
+    </form>
+    <div class="filters">${['進行中','已處理','全部'].map(s=>`<button type="button" data-f="${s}">${s}</button>`).join('')}</div>
+    <section class="card" id="plist"></section></div>`;
+  app.querySelectorAll('.filters button').forEach(b=>b.onclick=()=>{filter=b.dataset.f;draw()});
+  $('#pf').onsubmit = async e => { e.preventDefault();
+    try{ const p = await api('submitProposal',{proposal:{title:$('#pf_t').value.trim(),body:$('#pf_b').value.trim(),category:$('#pf_c').value,anonymous:$('#pf_a').checked}}); list.unshift(p); e.target.reset(); filter='進行中'; draw(); toast('已送出提議'); }catch(err){toast(err.message)} };
+  draw();
+}
+
+/* ===== 決議追蹤 ===== */
+function decTable(list, withMeeting, editable){
+  if(!list.length) return `<div class="empty">沒有決議事項</div>`;
+  return `<div class="tbl"><table><thead><tr>${withMeeting?'<th>會議</th>':''}<th>事項</th><th>負責人</th><th>期限</th><th>狀態</th><th>進度說明</th></tr></thead><tbody>
+  ${list.map(d=>`<tr>${withMeeting?`<td><a href="#/m/${esc(d.meeting_id)}">${esc(d.meeting_id)}</a></td>`:''}<td class="item">${esc(d.item)}</td><td>${esc(d.owner)}</td><td style="white-space:nowrap">${esc(d.due)}</td>
+  <td>${editable?`<select data-dec="${esc(d.dec_id)}" aria-label="狀態">${STATUS.map(s=>`<option ${s===d.status?'selected':''}>${s}</option>`).join('')}</select>`:statusChip(d.status)}</td><td>${esc(d.note)}</td></tr>`).join('')}</tbody></table></div>`;
+}
+async function renderDecisions(app){
+  const all = await api('listDecisions');
+  let filter = '未完成';
+  const counts = s => all.filter(d=>s==='未完成'?d.status!=='已完成':s==='全部'?true:d.status===s).length;
+  const draw = () => {
+    const list = all.filter(d => filter==='全部' || (filter==='未完成' ? d.status!=='已完成' : d.status===filter));
+    $('#dt').innerHTML = decTable(list, true, isAdmin());
+    $('#dt').querySelectorAll('[data-dec]').forEach(sel=>sel.onchange=async()=>{
+      const d = all.find(x=>x.dec_id===sel.dataset.dec); d.status = sel.value;
+      try{ await api('saveDecision',{decision:d}); toast('已更新狀態'); }catch(e){ toast(e.message); } });
+    app.querySelectorAll('.filters button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.f===filter));
+  };
+  app.innerHTML = `<div class="stack">${demoBanner()}${pageHead('決議追蹤','歷次會議決議與執行狀態')}
+    <div class="filters">${['未完成','未開始','進行中','持續追蹤','已完成','全部'].map(s=>`<button type="button" data-f="${s}">${s}（${counts(s)}）</button>`).join('')}</div>
+    <div class="card" id="dt"></div></div>`;
+  app.querySelectorAll('.filters button').forEach(b=>b.onclick=()=>{filter=b.dataset.f;draw()});
+  draw();
+}
+
+/* ===== 管理 ===== */
+async function renderAdmin(app){
+  const list = await api('listMeetings');
+  const opts = list.map(m=>`<option value="${esc(m.meeting_id)}">${esc(m.meeting_id)}　${esc(m.title)}</option>`).join('');
+  app.innerHTML = `<div class="stack">${demoBanner()}${pageHead('管理','發布本月會議資料')}
+    <p class="muted" style="margin:0">流程：① 建立會議 → ② 上傳會議報告 → ③ 發布公告、投票與決議 → 會議狀態改「公開」</p>
+    <form class="card stack" id="fm"><h2>① 建立或編輯會議</h2>
+      <div class="grid2"><label class="f" for="m_id">會議月份<input id="m_id" placeholder="2026-11" pattern="\\d{4}-\\d{2}" required></label>
+      <label class="f" for="m_date">會議日期（預設今天，可改）<input id="m_date" type="date" required></label>
+      <label class="f" for="m_status">狀態<select id="m_status"><option value="draft">草稿（只有管理者看得到）</option><option value="published">公開（同仁可看）</option></select></label></div>
+      <label class="f" for="m_title">標題<input id="m_title" placeholder="11月急診護理單位會議" required></label>
+      <label class="f" for="m_scribes">值日生員工編號（可多位，用逗號分隔；可上傳錄音、編輯紀錄）<input id="m_scribes" placeholder="12345, 23456"></label>
+      <label class="f" for="m_sum">重點摘要<textarea id="m_sum"></textarea></label>
+      <div><button class="btn primary" type="submit">儲存會議</button></div></form>
+    <form class="card stack" id="ff"><h2>② 上傳會議報告與附件</h2>
+      <div class="grid2"><label class="f" for="f_m">會議<select id="f_m">${opts}</select></label>
+      <label class="f" for="f_kind">類型<select id="f_kind"><option>會議報告</option><option>附件</option><option>會議紀錄</option></select></label></div>
+      <label class="f" for="f_file">檔案（網頁版會議報告 .html、PDF 或圖片，25MB 以內）<input id="f_file" type="file" accept=".html,.htm,application/pdf,image/*" required></label>
+      <div><button class="btn primary" type="submit">上傳</button></div></form>
+    <form class="card stack" id="fa"><h2>③ 發布公告</h2>
+      <div class="grid2"><label class="f" for="a_cat">類別<select id="a_cat">${ANN_CATS.map(c=>`<option>${c}</option>`).join('')}</select></label>
+      <label class="f" for="a_date">活動日期<input id="a_date" type="date"></label>
+      <label class="f" for="a_exp">下架日期（選填）<input id="a_exp" type="date"></label>
+      <label class="f" for="a_m">來源會議<select id="a_m"><option value="">（無）</option>${opts}</select></label></div>
+      <label class="f" for="a_title">標題<input id="a_title" required></label>
+      <label class="f" for="a_body">內容<textarea id="a_body"></textarea></label>
+      <div class="row between"><label class="check"><input type="checkbox" id="a_pin"> 置頂</label><button class="btn primary" type="submit">發布公告</button></div></form>
+    <form class="card stack" id="fp"><h2>③ 新增投票（不記名）</h2>
+      <div class="grid2"><label class="f" for="p_m">會議<select id="p_m">${opts}</select></label>
+      <label class="f" for="p_close">截止日<input id="p_close" type="date"></label></div>
+      <label class="f" for="p_q">題目<input id="p_q" placeholder="下半年度關懷活動對象" required></label>
+      <label class="f" for="p_opts">選項（一行一個）<textarea id="p_opts" placeholder="育幼院&#10;晨光" required></textarea></label>
+      <div><button class="btn primary" type="submit">建立投票</button></div></form>
+    <form class="card stack" id="fd"><h2>③ 新增決議事項</h2>
+      <div class="grid2"><label class="f" for="d_m">會議<select id="d_m">${opts}</select></label>
+      <label class="f" for="d_owner">負責人<input id="d_owner"></label>
+      <label class="f" for="d_due">期限<input id="d_due" type="date"></label></div>
+      <label class="f" for="d_item">事項<input id="d_item" required></label>
+      <div><button class="btn primary" type="submit">新增決議</button></div></form>
+  </div>`;
+  // 預設本月、今天；輸入既有月份時自動帶入原資料，方便修改日期等欄位
+  const today = (() => { const d=new Date(); return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10); })();
+  $('#m_id').value = today.slice(0,7); $('#m_date').value = today;
+  const fill = () => { const m = list.find(x=>x.meeting_id===$('#m_id').value.trim()); if(!m) return;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(m.date)) $('#m_date').value = m.date;
+    $('#m_title').value = m.title||''; $('#m_sum').value = m.summary||''; $('#m_status').value = m.status==='published'?'published':'draft'; $('#m_scribes').value = m.scribes||''; };
+  $('#m_id').addEventListener('change', fill); fill();
+  const run = (id, fn) => { $(id).onsubmit = async e => { e.preventDefault(); try{ await fn(e); }catch(err){ toast(err.message); } }; };
+  run('#fm', async () => { await api('saveMeeting',{meeting:{meeting_id:$('#m_id').value.trim(),date:$('#m_date').value,title:$('#m_title').value,summary:$('#m_sum').value,status:$('#m_status').value,scribes:$('#m_scribes').value}}); toast('已儲存會議'); renderAdmin(app); });
+  run('#ff', async e => { const f=$('#f_file').files[0]; if(!f) return; let mime=f.type||''; if(/\.html?$/i.test(f.name)) mime='text/html';
+    toast('上傳中…'); await api('uploadFile',{meeting_id:$('#f_m').value,kind:$('#f_kind').value,name:f.name.replace(/\.html?$/i,''),mime,base64:await fileB64(f)}); toast('已上傳 '+f.name); e.target.reset(); });
+  run('#fa', async e => { await api('saveAnnouncement',{announcement:{category:$('#a_cat').value,event_date:$('#a_date').value,expires:$('#a_exp').value,meeting_id:$('#a_m').value,title:$('#a_title').value,body:$('#a_body').value,pinned:$('#a_pin').checked}}); toast('已發布公告'); e.target.reset(); });
+  run('#fp', async e => { await api('savePoll',{poll:{meeting_id:$('#p_m').value,question:$('#p_q').value,options:$('#p_opts').value.split('\n'),close_at:$('#p_close').value}}); toast('已建立投票'); e.target.reset(); });
+  run('#fd', async e => { await api('saveDecision',{decision:{meeting_id:$('#d_m').value,item:$('#d_item').value,owner:$('#d_owner').value,due:$('#d_due').value,status:'未開始'}}); toast('已新增決議'); e.target.reset(); });
+}
+
+/* ===== 會議紀錄：值日生上傳錄音或貼筆記 → AI 依病房會議紀錄格式產生草稿 → 護理長核定公開 ===== */
+const HEAD_FIELDS = [['time','會議時間'],['place','地點'],['chair','主席（含職稱）'],['recorder','記錄（含職稱）'],['attend','出席人員'],['leave','請假人員']];
+const TEMPLATE_BODY = `一、上次會議追蹤
+議題1.
+決議：
+
+二、本次會議報告事項
+1.護理長報告
+ (1)
+ 說明：
+ 討論：
+ 決議：
+2.各組報告
+3.本次討論事項
+議題1.（提案人：）
+ 說明：
+ 討論：
+ 決議：
+4.「病人照顧需求」問題討論
+5.臨時動議
+
+下次會議追蹤事項
+1.`;
+async function loadMinutes(id, meeting){
+  const box = $('#minutes');
+  let r;
+  try { r = await api('getMinutes',{meeting_id:id}); } catch(e){ box.innerHTML = `<h2>會議紀錄</h2><div class="muted">${esc(e.message)}</div>`; return; }
+  const mi = r.minutes || {header:{}, body:'', followups:[], status:'draft'};
+  if (!r.can_edit) {
+    box.innerHTML = r.minutes
+      ? `<div class="row between"><h2>會議紀錄</h2><button class="btn" type="button" id="mdoc">下載 Word 檔</button></div>${headTable(mi.header)}<div style="white-space:pre-wrap;color:var(--fg-2)">${esc(mi.body)}</div>`
+      : `<h2>會議紀錄</h2><div class="muted">會議紀錄整理中，核定後會公告在這裡。</div>`;
+    const b = $('#mdoc'); if (b) b.onclick = () => downloadDoc(meeting, mi);
+    return;
+  }
+  box.innerHTML = `
+    <div class="row between"><h2>會議紀錄</h2><span class="chip ${mi.status==='published'?'ok':'warn'}">${mi.status==='published'?'已核定公開':'草稿（同仁看不到）'}</span></div>
+    <div class="grid2">${HEAD_FIELDS.map(([k,t])=>`<label class="f" for="h_${k}">${t}<input id="h_${k}" value="${esc(mi.header[k]||(k==='time'?meeting.date:''))}"></label>`).join('')}</div>
+    <div class="card stack" style="background:var(--bg)">
+      <h2 style="font-size:16.5px">用 AI 整理紀錄（擇一）</h2>
+      <div class="grid2">
+        <div class="stack" style="gap:8px"><label class="f" for="m_audio">A. 上傳會議錄音（m4a／mp3，30MB 以內）${mi.has_audio?'<span class="chip ok" style="align-self:flex-start">已上傳錄音</span>':''}<input id="m_audio" type="file" accept="audio/*"></label>
+          <div class="row"><button class="btn" type="button" id="m_up">上傳錄音</button><button class="btn primary" type="button" id="m_ai_a">由錄音產生紀錄</button></div></div>
+        <div class="stack" style="gap:8px"><label class="f" for="m_notes">B. 貼上會議筆記<textarea id="m_notes" placeholder="值日生的手寫或打字重點"></textarea></label>
+          <div><button class="btn primary" type="button" id="m_ai_t">由筆記產生紀錄</button></div></div>
+      </div>
+      <div class="muted small">AI 會依「病房會議紀錄」格式整理，病人姓名與病歷號自動改為病人A／B。產生的是草稿，請核對後再送核定。整理一小時錄音約需 1–3 分鐘。</div>
+    </div>
+    <label class="f" for="m_body">紀錄內容（可直接編輯或手動輸入）<textarea id="m_body" style="min-height:420px;line-height:1.7">${esc(mi.body || TEMPLATE_BODY)}</textarea></label>
+    <div class="stack" style="gap:8px"><h2 style="font-size:16.5px">下次會議追蹤事項</h2>
+      <div id="m_fu" class="stack" style="gap:8px"></div>
+      <div><button class="btn" type="button" id="m_addfu">＋ 新增一項</button></div>
+      ${isAdmin()?'<div class="muted small">核定時，勾選的事項會加入「決議追蹤」。</div>':''}</div>
+    <div class="row"><button class="btn" type="button" id="m_save">儲存草稿</button><button class="btn" type="button" id="m_doc">下載 Word 檔</button>${isAdmin()?'<button class="btn primary" type="button" id="m_ok">核定並公開</button>':''}</div>`;
+  const fuBox = $('#m_fu');
+  const fuRow = (f={}) => { const d=document.createElement('div'); d.className='grid2'; d.style.gridTemplateColumns='auto 2fr 1fr 1fr';
+    d.innerHTML = `<input type="checkbox" checked aria-label="加入決議追蹤" style="width:auto;align-self:center"><input aria-label="事項" value="${esc(f.item||'')}" placeholder="追蹤事項"><input aria-label="負責人" value="${esc(f.owner||'')}" placeholder="負責人"><input aria-label="期限" type="date" value="${esc(f.due||'')}">`; fuBox.appendChild(d); };
+  ((mi.followups||[]).length ? mi.followups : [{}]).forEach(fuRow);
+  $('#m_addfu').onclick = () => fuRow();
+  const collect = () => ({
+    header: Object.fromEntries(HEAD_FIELDS.map(([k])=>[k,$('#h_'+k).value])),
+    body: $('#m_body').value,
+    followups: [...fuBox.children].map(r=>{const i=r.querySelectorAll('input');return {pick:i[0].checked,item:i[1].value.trim(),owner:i[2].value.trim(),due:i[3].value}}).filter(f=>f.item)
+  });
+  const strip = x => ({...x, followups:x.followups.map(({pick,...f})=>f)});
+  const busy = (on, msg) => { box.querySelectorAll('button').forEach(b=>b.disabled=on); if(msg) toast(msg); };
+  const reload = () => loadMinutes(id, meeting);
+  $('#m_save').onclick = async () => { busy(true); try{ await api('saveMinutes',{meeting_id:id,minutes:strip(collect())}); toast('已儲存草稿'); reload(); }catch(e){ toast(e.message); busy(false);} };
+  $('#m_doc').onclick = () => downloadDoc(meeting, collect());
+  $('#m_up').onclick = async () => { const f=$('#m_audio').files[0]; if(!f) return toast('請先選擇錄音檔');
+    if (f.size > 30*1048576) return toast('錄音檔超過 30MB');
+    busy(true,'上傳錄音中…'); try{ await api('uploadAudio',{meeting_id:id,name:f.name,mime:f.type||'audio/mp4',base64:await fileB64(f)}); toast('錄音已上傳'); reload(); }catch(e){ toast(e.message); busy(false);} };
+  const ai = async (source) => { if (source==='text' && !$('#m_notes').value.trim()) return toast('請先貼上會議筆記');
+    busy(true,'AI 整理中，請稍候…'); try{ await api('summarize',{meeting_id:id,source,text:$('#m_notes').value,header:collect().header}); toast('已產生紀錄草稿，請核對'); reload(); }catch(e){ toast(e.message); busy(false);} };
+  $('#m_ai_a').onclick = () => ai('audio');
+  $('#m_ai_t').onclick = () => ai('text');
+  const ok = $('#m_ok'); if (ok) ok.onclick = async () => { busy(true); try{ const x=collect();
+      await api('saveMinutes',{meeting_id:id,minutes:strip(x)});
+      await api('approveMinutes',{meeting_id:id,add_followups:x.followups.filter(f=>f.pick).map(({pick,...f})=>f)}); toast('已核定並公開'); render(); }catch(e){ toast(e.message); busy(false);} };
+}
+function headTable(h){ return `<div class="tbl"><table><tbody>${HEAD_FIELDS.filter(([k])=>h[k]).map(([k,t])=>`<tr><th style="width:140px">${t.replace(/（.*）/,'')}</th><td>${esc(h[k])}</td></tr>`).join('')}</tbody></table></div>`; }
+function downloadDoc(meeting, mi){
+  const h = mi.header || {};
+  const row = (k,v)=>`<tr><td style="width:22%;border:1px solid #000;padding:6px;font-size:14pt;text-align:center">${k}</td><td style="border:1px solid #000;padding:6px;font-size:14pt">${esc(v||'')}</td></tr>`;
+  const fu = (mi.followups||[]).filter(f=>f.item).map((f,i)=>`${i+1}.${esc(f.item)}${f.owner?'（負責人：'+esc(f.owner)+'）':''}${f.due?'（期限：'+esc(f.due)+'）':''}`).join('<br>');
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>${esc(meeting.title)}</title>
+  <style>body{font-family:標楷體,DFKai-SB,serif;font-size:12pt;line-height:1.6}h1{font-size:16pt;text-align:center}</style></head><body>
+  <h1>嘉義基督教醫院 急診 會議紀錄</h1>
+  <table style="border-collapse:collapse;width:100%">${row('會議名稱',meeting.title)}${row('會議時間',h.time)}${row('地　　點',h.place)}${row('主　　席',h.chair)}${row('記　　錄',h.recorder)}${row('出席人員',h.attend)}${row('請假人員',h.leave)}</table>
+  <p style="font-size:14pt;margin-top:16pt"><b>討論內容如下</b></p>
+  <div>${esc(mi.body).replace(/\n/g,'<br>')}</div>
+  ${fu?`<p style="font-size:14pt"><b>下次會議追蹤事項</b></p><p>${fu}</p>`:''}</body></html>`;
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob(['﻿'+html],{type:'application/msword'}));
+  a.download = `${meeting.meeting_id}_會議紀錄.doc`; document.body.appendChild(a); a.click(); a.remove();
+}
+
+/* ===== 檔案檢視：登入後才從後端取檔，不公開雲端硬碟連結 ===== */
+async function openFile(id){
+  const v=$('#viewer'), body=$('#vbody');
+  body.innerHTML='<div class="empty" style="color:#bbb;flex:1">載入中…</div>'; v.hidden=false;
+  try{
+    const f = await api('getFile',{att_id:id});
+    $('#vtitle').textContent = f.name;
+    let html = f.text;
+    if (!html && f.mime==='text/html') html = new TextDecoder().decode(Uint8Array.from(atob(f.base64),c=>c.charCodeAt(0)));
+    if (f.mime==='text/html'){ const fr=document.createElement('iframe'); fr.setAttribute('sandbox','allow-scripts'); fr.setAttribute('allow','fullscreen'); fr.setAttribute('allowfullscreen',''); fr.title=f.name; fr.srcdoc=html; body.replaceChildren(fr); setTimeout(()=>fr.focus(),300); }
+    else { const blob=new Blob([Uint8Array.from(atob(f.base64),c=>c.charCodeAt(0))],{type:f.mime}); const url=URL.createObjectURL(blob);
+      const el = f.mime.startsWith('image/') ? Object.assign(document.createElement('img'),{src:url,alt:f.name}) : Object.assign(document.createElement('iframe'),{src:url,title:f.name});
+      body.replaceChildren(el); }
+  }catch(e){ body.innerHTML=`<div class="empty" style="color:#ddd;flex:1">${esc(e.message)}</div>`; }
+}
+$('#vclose').onclick=()=>{ $('#viewer').hidden=true; $('#vbody').innerHTML=''; };
+$('#vfs').onclick=()=>{ try{ document.fullscreenElement?document.exitFullscreen():$('#viewer').requestFullscreen().catch(()=>{}); }catch(_){} };
+addEventListener('keydown',e=>{ if(e.key==='Escape' && !$('#qrModal').hidden) $('#qrClose').click(); if(e.key==='Escape' && !$('#viewer').hidden && !document.fullscreenElement) $('#vclose').click(); });
+
+/* ===== 啟動：比照點班本，經 ED 帳號中心登入 ===== */
+if (DEMO) { session = {staff_id:'00000', name:'示範帳號', role:'admin'}; render(); }
+else if (window.EDAuth) { EDAuth.init({ app:'meeting', appName:'急診會議整合資料' }).then(u => { session = u; render(); }); render(); }
+else render();
+</script>
+</body>
+</html>
