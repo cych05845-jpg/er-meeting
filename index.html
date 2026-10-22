@@ -27,104 +27,104 @@
 *{box-sizing:border-box}
 [hidden]{display:none!important}
 html,body{margin:0}
-body{background:var(--bg);color:var(--fg);font-family:var(--f);font-size:16px;line-height:1.6}
+body{background:var(--bg);color:var(--fg);font-family:var(--f);font-size:18.5px;line-height:1.65}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--ink)}
 button,input,select,textarea{font:inherit;color:inherit}
 a{color:var(--ink-2)}
-.wrap{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.wrap{max-width:1240px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--ink);color:var(--ink-fg);box-shadow:0 2px 12px rgba(0,0,0,.08)}
 .hrow{display:flex;align-items:center;gap:16px;min-height:56px;padding-block:6px}
-.brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:19px;letter-spacing:.03em;flex:1;min-width:0}
+.brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:22px;letter-spacing:.03em;flex:1;min-width:0}
 .brand .mark{width:34px;height:34px;border-radius:10px;background:var(--accent);display:grid;place-items:center;flex:none}
-.brand small{display:block;font-weight:400;font-size:12px;letter-spacing:.14em;color:var(--ink-mute)}
-.who{font-size:14px;display:flex;gap:10px;align-items:center;color:var(--ink-mute)}
+.brand small{display:block;font-weight:400;font-size:14px;letter-spacing:.14em;color:var(--ink-mute)}
+.who{font-size:16px;display:flex;gap:10px;align-items:center;color:var(--ink-mute)}
 .who button{background:transparent;border:1px solid rgba(255,255,255,.3);color:var(--ink-fg);border-radius:999px;padding:3px 12px;cursor:pointer}
 nav{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;margin-bottom:-1px}
 nav::-webkit-scrollbar{display:none}
 nav a{color:var(--ink-mute);text-decoration:none;padding:9px 14px 11px;white-space:nowrap;border-bottom:3px solid transparent;display:flex;gap:6px;align-items:center}
 nav a:hover{color:var(--ink-fg)}
 nav a[aria-current="page"]{color:var(--ink-fg);border-bottom-color:var(--accent);font-weight:700}
-nav .badge{background:var(--accent);color:#fff;border-radius:999px;font-size:11px;padding:0 6px;line-height:17px;font-weight:700}
+nav .badge{background:var(--accent);color:#fff;border-radius:999px;font-size:12.5px;padding:0 6px;line-height:17px;font-weight:700}
 main{padding-block:26px 72px}
-h1{font-size:28px;line-height:1.3;margin:0;text-wrap:balance}
-h2{font-size:19px;margin:0;line-height:1.35}
-h3{font-size:16px;margin:0}
-.eyebrow{font-size:12.5px;letter-spacing:.16em;color:var(--accent);font-weight:700}
+h1{font-size:32px;line-height:1.3;margin:0;text-wrap:balance}
+h2{font-size:22px;margin:0;line-height:1.35}
+h3{font-size:18.5px;margin:0}
+.eyebrow{font-size:14.5px;letter-spacing:.16em;color:var(--accent);font-weight:700}
 .muted{color:var(--fg-3)}
-.small{font-size:14px}
+.small{font-size:16px}
 .stack{display:flex;flex-direction:column;gap:16px}
 .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .between{justify-content:space-between}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:20px 22px;min-width:0}
 .sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:12px}
-.sec-head a{font-size:14px;text-decoration:none}
-.banner{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:10px 14px;font-size:14px}
+.sec-head a{font-size:16px;text-decoration:none}
+.banner{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:10px 14px;font-size:16px}
 .page-head{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
 /* 首頁 */
 .hero{background:var(--ink);color:var(--ink-fg);border:none;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:20px;align-items:center;padding:26px 28px;position:relative;overflow:hidden}
 .hero::after{content:"";position:absolute;right:-60px;top:-60px;width:240px;height:240px;border-radius:50%;border:28px solid rgba(255,255,255,.06);pointer-events:none}
 .hero .eyebrow{color:#FFB59C}
-.hero h1{font-size:30px}
-.hero .meta{color:var(--ink-mute);font-size:15px}
+.hero h1{font-size:34.5px}
+.hero .meta{color:var(--ink-mute);font-size:17px}
 .hero .facts{display:flex;gap:22px;flex-wrap:wrap;margin-top:14px}
 .hero .facts div{display:flex;flex-direction:column}
-.hero .facts b{font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}
-.hero .facts span{font-size:13px;color:var(--ink-mute)}
+.hero .facts b{font-size:30px;line-height:1.1;font-variant-numeric:tabular-nums}
+.hero .facts span{font-size:15px;color:var(--ink-mute)}
 .dash{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:16px}
 @media (max-width:860px){.dash{grid-template-columns:1fr}.hero{grid-template-columns:1fr}}
 /* 公告 */
 .ann{display:grid;grid-template-columns:58px minmax(0,1fr);gap:14px;padding:14px 0;border-top:1px solid var(--line)}
 .ann:first-child{border-top:none;padding-top:2px}
 .date{width:58px;border-radius:10px;overflow:hidden;text-align:center;border:1px solid var(--line);background:var(--surface);align-self:start}
-.date .m{background:var(--accent);color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.06em;padding:2px 0}
-.date .d{font-size:22px;font-weight:700;line-height:1.35;font-variant-numeric:tabular-nums}
-.date .w{font-size:11px;color:var(--fg-3);padding-bottom:3px}
+.date .m{background:var(--accent);color:#fff;font-size:13px;font-weight:700;letter-spacing:.06em;padding:2px 0}
+.date .d{font-size:25.5px;font-weight:700;line-height:1.35;font-variant-numeric:tabular-nums}
+.date .w{font-size:12.5px;color:var(--fg-3);padding-bottom:3px}
 .date.none .m{background:var(--fg-3)}
-.ann h3{font-size:16.5px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.ann p{margin:3px 0 0;color:var(--fg-2);font-size:15px;white-space:pre-wrap}
-.pin{font-size:12px;color:var(--accent);font-weight:700}
+.ann h3{font-size:19px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ann p{margin:3px 0 0;color:var(--fg-2);font-size:17px;white-space:pre-wrap}
+.pin{font-size:14px;color:var(--accent);font-weight:700}
 .chips{display:flex;gap:6px;flex-wrap:wrap}
-.chip{font-size:12.5px;padding:1px 9px;border-radius:999px;background:var(--bg);color:var(--fg-2);border:1px solid var(--line);white-space:nowrap;font-weight:500}
+.chip{font-size:14.5px;padding:1px 9px;border-radius:999px;background:var(--bg);color:var(--fg-2);border:1px solid var(--line);white-space:nowrap;font-weight:500}
 .chip.hot{background:var(--accent-soft);color:var(--accent);border-color:transparent}
 .chip.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
 .chip.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
 .chip.teal{background:var(--teal-soft);color:var(--teal);border-color:transparent}
 .filters{display:flex;gap:6px;flex-wrap:wrap}
-.filters button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 14px;cursor:pointer;font-size:14.5px}
+.filters button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:4px 14px;cursor:pointer;font-size:16.5px}
 .filters button[aria-pressed="true"]{background:var(--ink);color:var(--ink-fg);border-color:var(--ink)}
 /* 按鈕與表單 */
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 16px;cursor:pointer;text-decoration:none;color:var(--fg);font-size:15px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 16px;cursor:pointer;text-decoration:none;color:var(--fg);font-size:17px}
 .btn:hover{border-color:var(--ink-2)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.light{background:var(--ink-fg);border-color:var(--ink-fg);color:var(--ink)}
-.btn.big{padding:12px 22px;font-size:16.5px;font-weight:700}
+.btn.big{padding:12px 22px;font-size:19px;font-weight:700}
 .btn[disabled]{opacity:.55;cursor:default}
 button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-label.f{display:flex;flex-direction:column;gap:4px;font-size:14px;color:var(--fg-2);min-width:0}
+label.f{display:flex;flex-direction:column;gap:4px;font-size:16px;color:var(--fg-2);min-width:0}
 input,select,textarea{border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:8px 10px;width:100%}
 textarea{min-height:90px;resize:vertical}
 .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-.check{display:flex;gap:8px;align-items:center;font-size:14.5px;color:var(--fg-2)}
+.check{display:flex;gap:8px;align-items:center;font-size:16.5px;color:var(--fg-2)}
 .check input{width:auto}
 /* 會議列表 */
-.year{font-size:13px;color:var(--fg-3);letter-spacing:.14em;font-weight:700;margin-top:6px}
+.year{font-size:15px;color:var(--fg-3);letter-spacing:.14em;font-weight:700;margin-top:6px}
 .mlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
 .mcard{display:flex;flex-direction:column;gap:8px;text-decoration:none;color:inherit;transition:border-color .15s,transform .15s}
 .mcard:hover{border-color:var(--ink-2);transform:translateY(-2px)}
-.mcard .mon{font-size:32px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
-.mcard .mon span{font-size:14px;color:var(--fg-3);font-weight:400;margin-left:6px}
-.mcard p{margin:0;color:var(--fg-2);font-size:14.5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.mcard .mon{font-size:37px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.mcard .mon span{font-size:16px;color:var(--fg-3);font-weight:400;margin-left:6px}
+.mcard p{margin:0;color:var(--fg-2);font-size:16.5px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
 .report-hero{display:flex;gap:20px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--ink);color:var(--ink-fg);border:none}
-.report-hero .t{font-size:19px;font-weight:700}
+.report-hero .t{font-size:22px;font-weight:700}
 .report-hero .muted{color:var(--ink-mute)}
 .files .file{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--line)}
 .files .file:first-child{border-top:none}
 .file .n{flex:1;min-width:0;overflow-wrap:anywhere}
 /* 表格 */
 .tbl{overflow-x:auto}
-table{border-collapse:collapse;width:100%;font-size:15px}
+table{border-collapse:collapse;width:100%;font-size:17px}
 th,td{text-align:left;padding:10px 10px;border-bottom:1px solid var(--line);vertical-align:top}
-th{font-size:12.5px;color:var(--fg-3);font-weight:700;letter-spacing:.06em;white-space:nowrap}
+th{font-size:14.5px;color:var(--fg-3);font-weight:700;letter-spacing:.06em;white-space:nowrap}
 td.item{min-width:220px}
 /* 投票 */
 .poll .opt{display:flex;flex-direction:column;gap:6px;margin-top:10px}
@@ -139,20 +139,20 @@ td.item{min-width:220px}
 .prop{display:grid;grid-template-columns:64px minmax(0,1fr);gap:14px;padding:16px 0;border-top:1px solid var(--line)}
 .prop:first-child{border-top:none;padding-top:2px}
 .second{display:flex;flex-direction:column;align-items:center;gap:2px;border:1px solid var(--line);border-radius:12px;padding:8px 0;background:var(--surface);cursor:pointer;align-self:start;width:64px}
-.second b{font-size:20px;line-height:1;font-variant-numeric:tabular-nums}
-.second span{font-size:12px;color:var(--fg-3)}
+.second b{font-size:23px;line-height:1;font-variant-numeric:tabular-nums}
+.second span{font-size:14px;color:var(--fg-3)}
 .second[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
 .second[aria-pressed="true"] b,.second[aria-pressed="true"] span{color:var(--accent)}
-.prop p{margin:4px 0 0;color:var(--fg-2);font-size:15px;white-space:pre-wrap}
-.reply{margin-top:8px;background:var(--bg);border-radius:10px;padding:8px 12px;font-size:14.5px;color:var(--fg-2)}
+.prop p{margin:4px 0 0;color:var(--fg-2);font-size:17px;white-space:pre-wrap}
+.reply{margin-top:8px;background:var(--bg);border-radius:10px;padding:8px 12px;font-size:16.5px;color:var(--fg-2)}
 .reply b{color:var(--ink-2)}
 .statbar{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .statbar div{background:var(--bg);border-radius:10px;padding:10px 12px}
-.statbar b{display:block;font-size:24px;line-height:1.1;font-variant-numeric:tabular-nums}
-.statbar span{font-size:13px;color:var(--fg-3)}
+.statbar b{display:block;font-size:27.5px;line-height:1.1;font-variant-numeric:tabular-nums}
+.statbar span{font-size:15px;color:var(--fg-3)}
 .login{max-width:400px;margin:7vh auto 0}
-.err{color:var(--accent);font-size:14px;min-height:1.4em}
-.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--ink-fg);padding:10px 18px;border-radius:999px;z-index:30;font-size:15px;box-shadow:0 6px 20px rgba(0,0,0,.2)}
+.err{color:var(--accent);font-size:16px;min-height:1.4em}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--ink-fg);padding:10px 18px;border-radius:999px;z-index:30;font-size:17px;box-shadow:0 6px 20px rgba(0,0,0,.2)}
 #viewer{position:fixed;inset:0;z-index:40;background:#0e1516;display:flex;flex-direction:column}
 #viewer .vbar{display:flex;align-items:center;gap:12px;padding:8px max(16px,env(safe-area-inset-right,0px)) 8px max(16px,env(safe-area-inset-left,0px));color:#E8EEEC;margin-top:env(safe-area-inset-top,0px)}
 #viewer .vbar b{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -161,45 +161,45 @@ td.item{min-width:220px}
 .learn{display:grid;grid-template-columns:auto minmax(0,1fr);gap:18px;align-items:center}
 .qrbox{background:#fff;padding:10px;border-radius:12px;border:1px solid var(--line);line-height:0;width:max-content}
 .qrbox img,.qrbox canvas{display:block}
-.hbtn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:var(--ink-fg);border-radius:999px;padding:4px 12px;cursor:pointer;font-size:14px;white-space:nowrap}
+.hbtn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:var(--ink-fg);border-radius:999px;padding:4px 12px;cursor:pointer;font-size:16px;white-space:nowrap}
 #qrModal{position:fixed;inset:0;z-index:45;background:rgba(10,20,22,.82);display:flex;align-items:center;justify-content:center;padding:16px}
 #qrModal .panel{background:var(--surface);color:var(--fg);border-radius:20px;padding:28px;max-width:min(560px,100%);width:100%;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center}
 #qrModal .qrbox{padding:16px}
-#qrModal .url{font-size:15px;color:var(--fg-2);overflow-wrap:anywhere}
+#qrModal .url{font-size:17px;color:var(--fg-2);overflow-wrap:anywhere}
 .empty{padding:22px;text-align:center;color:var(--fg-3)}
-.btn.sm{padding:3px 12px;font-size:13.5px}
+.btn.sm{padding:3px 12px;font-size:15.5px}
 #busy{position:fixed;left:0;top:0;height:3px;width:100%;z-index:60;pointer-events:none;background:linear-gradient(90deg,transparent,var(--accent),transparent);background-size:40% 100%;background-repeat:no-repeat;animation:busy 1s linear infinite}
 @keyframes busy{from{background-position:-40% 0}to{background-position:140% 0}}
 @media (prefers-reduced-motion:reduce){#busy{animation:none;background:var(--accent);opacity:.6}}
-#viewer .vbar a{color:#E8EEEC;border:1px solid #3b4b4c;border-radius:999px;padding:5px 14px;text-decoration:none;font-size:14px;white-space:nowrap}
+#viewer .vbar a{color:#E8EEEC;border:1px solid #3b4b4c;border-radius:999px;padding:5px 14px;text-decoration:none;font-size:16px;white-space:nowrap}
 #viewer .vbar button{white-space:nowrap}
-#viewer .vnote{color:#9fb1b0;font-size:13px;padding:4px 16px 8px}
+#viewer .vnote{color:#9fb1b0;font-size:15px;padding:4px 16px 8px}
 @media (max-width:640px){#viewer .vbar{flex-wrap:wrap}#viewer .vbar b{flex-basis:100%}}
 .btn.danger{color:var(--accent);border-color:var(--accent-soft)}
 .edit-box{background:var(--bg);border-radius:12px;padding:12px 14px;margin-top:8px}
 details.mgr{margin-top:12px;border-top:1px dashed var(--line);padding-top:8px}
-details.mgr summary{cursor:pointer;color:var(--fg-3);font-size:14px}
+details.mgr summary{cursor:pointer;color:var(--fg-3);font-size:16px}
 tr.overdue td{background:var(--accent-soft)}
-.ver{display:flex;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line);font-size:14.5px;flex-wrap:wrap}
+.ver{display:flex;gap:10px;align-items:center;padding:6px 0;border-top:1px solid var(--line);font-size:16.5px;flex-wrap:wrap}
 .ver:first-child{border-top:none}
 .readbar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--ok-soft);color:var(--ok);border-radius:12px;padding:12px 16px}
 .att-no{font-weight:700;color:var(--ink-2);white-space:nowrap}
 .addbox{background:var(--bg);border-radius:12px;padding:12px 14px}
 .kiosk{display:flex;flex-direction:column;gap:14px}
-.kin{font-size:34px;padding:14px 18px;text-align:center;letter-spacing:.12em;font-variant-numeric:tabular-nums;border-width:2px;border-color:var(--ink-2)}
-.kmsg{min-height:78px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;font-weight:700;text-align:center;padding:12px;background:var(--bg);color:var(--fg-3)}
+.kin{font-size:39px;padding:14px 18px;text-align:center;letter-spacing:.12em;font-variant-numeric:tabular-nums;border-width:2px;border-color:var(--ink-2)}
+.kmsg{min-height:78px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:700;text-align:center;padding:12px;background:var(--bg);color:var(--fg-3)}
 .kmsg.ok{background:var(--teal-soft);color:var(--teal)}
 .kmsg.bad{background:var(--accent-soft);color:var(--accent)}
 .kmsg.warn{background:var(--warn-soft);color:var(--warn)}
 #k_reader{max-width:420px;width:100%;margin:0 auto;border-radius:12px;overflow:hidden}
 .alist{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
-.alist .p{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:14.5px;min-width:0}
+.alist .p{display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:10px;padding:6px 10px;font-size:16.5px;min-width:0}
 .alist .p .n{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .alist .p.leave{background:var(--bg);color:var(--fg-3)}
-.alist .p button{border:none;background:none;color:var(--fg-3);cursor:pointer;padding:0 2px;font-size:16px}
-.bigpoll .poll h2{font-size:24px}
-.bigpoll .vote-btns .btn{font-size:20px;padding:18px}
-@media (max-width:560px){.statbar{grid-template-columns:repeat(2,minmax(0,1fr))}.hero h1{font-size:25px}.who span{display:none}}
+.alist .p button{border:none;background:none;color:var(--fg-3);cursor:pointer;padding:0 2px;font-size:18.5px}
+.bigpoll .poll h2{font-size:27.5px}
+.bigpoll .vote-btns .btn{font-size:23px;padding:18px}
+@media (max-width:560px){.lq{display:none}.brand>span:last-child{white-space:nowrap}.brand{font-size:17.5px;gap:8px}.brand small{display:none}.brand .mark{width:30px;height:30px}.hrow{gap:8px}.hbtn{padding:3px 9px;font-size:13.5px}.who{gap:6px}.statbar{grid-template-columns:repeat(2,minmax(0,1fr))}.hero h1{font-size:28.5px}.who span{display:none}}
 @media (prefers-reduced-motion:reduce){.mcard,.bar i{transition:none}}
 </style>
 </head>
@@ -208,14 +208,14 @@ tr.overdue td{background:var(--accent-soft)}
   <div class="hrow">
     <div class="brand"><span class="mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#fff" d="M9.5 3h5v6.5H21v5h-6.5V21h-5v-6.5H3v-5h6.5z"/></svg></span>
       <span>急診會議整合平台<small>ER MEETING HUB</small></span></div>
-    <button type="button" class="hbtn" id="learnBtn" aria-haspopup="dialog">ER-Learn QR</button>
+    <button type="button" class="hbtn" id="learnBtn" aria-haspopup="dialog" aria-label="ER-Learn QR"><span class="lq">ER-Learn </span>QR</button>
     <div class="who" id="who"></div>
   </div>
   <nav id="nav" aria-label="主選單"></nav>
 </div></header>
 <main class="wrap" id="app"></main>
 <div id="qrModal" hidden role="dialog" aria-modal="true" aria-labelledby="qrTitle">
-  <div class="panel"><div class="eyebrow" id="qrEye">教學資源</div><h1 id="qrTitle" style="font-size:26px">ER-Learn 急診學習網</h1>
+  <div class="panel"><div class="eyebrow" id="qrEye">教學資源</div><h1 id="qrTitle" style="font-size:30px">ER-Learn 急診學習網</h1>
     <p class="muted" style="margin:0" id="qrDesc">用手機相機掃描即可開啟，適合課堂與示範時投影</p>
     <div class="qrbox" id="qrBig"></div>
     <div class="url" id="qrUrl"></div>
@@ -269,6 +269,12 @@ function dateTile(d){
   const dt = new Date(+m[1], +m[2]-1, +m[3]);
   return `<div class="date" aria-label="${+m[2]}月${+m[3]}日"><div class="m">${+m[2]}月</div><div class="d">${+m[3]}</div><div class="w">週${WD[dt.getDay()]}</div></div>`;
 }
+/** 分享：手機叫出分享選單；電腦複製文字＋連結，可貼到任何地方 */
+async function shareLink(title, text, url){
+  try { if (navigator.share) return await navigator.share({title, text, url}); } catch(e){ if (e.name==='AbortError') return; }
+  try { await navigator.clipboard.writeText(text + '\n' + url); toast('已複製連結，可以貼到任何地方'); } catch(_) { prompt('複製這段文字：', text + ' ' + url); }
+}
+const shareMeeting = m => shareLink(m.title, `${m.title}（${m.date}）會議資料與紀錄，請點連結閱讀：`, `${SITE()}#/m/${m.meeting_id}`);
 function toast(msg){const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2400)}
 function fileB64(f){ return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=rej;r.readAsDataURL(f)}); }
 
@@ -381,6 +387,7 @@ async function mock(action, b){
       const key=b.meeting_id+'|'+(p.staff_id||'N:'+p.name); const old=M.attendance.find(a=>a.key===key); const st=b.status==='請假'?'請假':'出席';
       if(old){ const already=old.status===st; Object.assign(old,{status:st,time:t}); return {...p,status:st,already}; }
       M.attendance.push({key,meeting_id:b.meeting_id,...p,status:st,method:b.method||'自行簽到',time:t}); return {...p,status:st,already:false}; }
+    case 'saveHours': b.rows.forEach(r=>{ const a=M.attendance.find(x=>x.key===r.key); if(a){ a.hours=r.hours===''?'':Number(r.hours); a.hours_note=r.note; if(b.confirm){ a.confirmed_by=session.name; a.confirmed_at='2026-10-22 16:40'; } } }); return mock('listAttendance',b);
     case 'removeAttendance': M.attendance=M.attendance.filter(a=>a.key!==b.key); return true;
     case 'checkinBatch': b.people.filter(x=>x.status!=='未到').forEach(x=>M.attendance.push({key:'b'+Math.random(),meeting_id:b.meeting_id,staff_id:x.staff_id,name:x.name,title:x.unit,status:x.status,method:'簽到表照片',time:'14:00'})); return mock('listAttendance',b);
     case 'readSignSheet': return [{unit:'ER',name:'示範同仁甲',status:'出席',staff_id:'10001'},{unit:'ER',name:'示範同仁丙',status:'出席',staff_id:'10003'},{unit:'ER',name:'林?華',status:'請假',staff_id:''},{unit:'ER',name:'示範同仁丁',status:'未到',staff_id:''}];
@@ -558,7 +565,7 @@ function drawHome(app, {meetings, anns, polls, props, decs, detail}){
         <div class="meta">會議日期 ${esc(m.date)}</div>
         <div class="facts"><div><b>${anns.length}</b><span>則公告</span></div><div><b>${openPolls.length}</b><span>項投票進行中</span></div><div><b>${openDec.length}</b><span>項決議追蹤中</span></div>${decs.some(isOverdue)?`<div><b style="color:#FFB59C">${decs.filter(isOverdue).length}</b><span>項決議逾期</span></div>`:''}<div><b>${props.filter(p=>p.status==='待審閱'||p.status==='排入議程').length}</b><span>則提議待處理</span></div></div>
       </div>
-      <div class="row">${report?`<button class="btn light big" type="button" data-open="${esc(report.att_id)}">▶ 觀看會議報告</button>`:''}<a class="btn big" style="background:transparent;color:var(--ink-fg);border-color:rgba(255,255,255,.35)" href="#/m/${esc(m.meeting_id)}">會議紀錄與資料</a></div>
+      <div class="row">${report?`<button class="btn light big" type="button" data-open="${esc(report.att_id)}">▶ 觀看會議報告</button>`:''}<a class="btn big" style="background:transparent;color:var(--ink-fg);border-color:rgba(255,255,255,.35)" href="#/m/${esc(m.meeting_id)}">會議紀錄與資料</a><button class="btn big" type="button" id="heroShare" style="background:transparent;color:var(--ink-fg);border-color:rgba(255,255,255,.35)">分享</button></div>
     </section>` : `<div class="card empty">還沒有會議資料</div>`}
     <div class="dash">
       <section class="card"><div class="sec-head"><h2>最新公告</h2><a href="#/news">全部公告 →</a></div>
@@ -580,6 +587,7 @@ function drawHome(app, {meetings, anns, polls, props, decs, detail}){
   </div>`;
   app.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openFile(b.dataset.open));
   app.querySelectorAll('[data-learn]').forEach(b=>b.onclick=openLearn);
+  const hs = $('#heroShare'); if (hs && m) hs.onclick = () => shareMeeting(m);
   drawQR($('#qrSmall'), 132);
   bindPolls(app);
 }
@@ -589,7 +597,7 @@ function drawQR(el, size, text){
   if (!el) return;
   el.innerHTML = '';
   if (window.QRCode) new QRCode(el, {text:text||CONFIG.LEARN_URL, width:size, height:size, colorDark:'#1E5A64', colorLight:'#ffffff', correctLevel:QRCode.CorrectLevel.M});
-  else el.innerHTML = `<div style="width:${size}px;height:${size}px;display:grid;place-items:center;color:#555;font-size:13px;line-height:1.4;padding:8px">QR 載入失敗<br>請用下方連結</div>`;
+  else el.innerHTML = `<div style="width:${size}px;height:${size}px;display:grid;place-items:center;color:#555;font-size:15px;line-height:1.4;padding:8px">QR 載入失敗<br>請用下方連結</div>`;
 }
 let qrCur = CONFIG.LEARN_URL;
 const SITE = () => location.href.split('#')[0];
@@ -681,10 +689,12 @@ async function renderMeeting(app, id){
     ${pageHead(esc(m.meeting_id.replace('-',' 年 '))+' 月', esc(m.title), isAdmin()
       ? `<form class="row" id="dateForm"><label class="f" for="md_date" style="flex-direction:row;align-items:center;gap:8px">會議日期<input id="md_date" type="date" value="${esc(/^\d{4}-\d{2}-\d{2}$/.test(m.date)?m.date:'')}" style="width:auto"></label><button class="btn" type="submit">儲存日期</button></form>`
       : `<span class="muted">會議日期 ${esc(m.date)}</span>`)}
+    <div class="row"><button class="btn primary" type="button" id="mShareTop">分享這次會議</button></div>
     ${reports.map(a=>`<div class="card report-hero"><div><div class="t">${esc(a.name)}</div><div class="muted">${a.url?'外部連結':'在網頁上播放，←／→ 換頁，N 鍵看講者備註'}</div></div>
       <button class="btn light big" type="button" data-open="${esc(a.att_id)}">▶ 觀看會議報告</button></div>`).join('')}
     <div class="card row between"><div><h2>會議現場 QR</h2><div class="muted small">投影給全場掃描：同仁用手機登入後可簽到、投票</div></div><button class="btn primary" type="button" id="liveQR">投影現場 QR</button></div>
     <div class="card stack" id="attend"><h2>出席簽到</h2><div class="muted">載入中…</div></div>
+    <div class="card stack" id="hours" hidden></div>
     ${m.summary?`<div class="card"><h2>重點摘要</h2><p style="margin:8px 0 0;color:var(--fg-2)">${esc(m.summary)}</p></div>`:''}
     ${d.polls.map(p=>pollCard(p)).join('')}
     <div class="card stack" id="minutes"><h2>會議紀錄</h2><div class="muted">載入中…</div></div>
@@ -692,6 +702,7 @@ async function renderMeeting(app, id){
     <div class="card stack" id="atts"></div>
   </div>`;
   app.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openFile(b.dataset.open));
+  $('#mShareTop').onclick = () => shareMeeting(m);
   $('#liveQR').onclick = () => openQR({eyebrow:'會議現場', title:m.title, desc:'手機掃描 → 登入 → 簽到與投票', url:SITE()+'#/live/'+id});
   renderAtts(id, d);
   loadAttend(id, m);
@@ -749,7 +760,7 @@ async function renderPolls(app){
 function propItem(p){
   return `<div class="prop" data-prop="${esc(p.prop_id)}">
     <button type="button" class="second" aria-pressed="${p.seconded}" aria-label="附議，目前 ${p.seconds} 人"><b>${p.seconds}</b><span>${p.seconded?'已附議':'附議'}</span></button>
-    <div style="min-width:0"><div class="row"><h3 style="font-size:16.5px">${esc(p.title)}</h3>${propChip(p.status)}<span class="chip">${esc(p.category)}</span></div>
+    <div style="min-width:0"><div class="row"><h3 style="font-size:19px">${esc(p.title)}</h3>${propChip(p.status)}<span class="chip">${esc(p.category)}</span></div>
     <div class="muted small">${esc(p.proposer||'')}・${esc(p.created_at)}${p.meeting_id?`・排入 <a href="#/m/${esc(p.meeting_id)}">${esc(p.meeting_id)} 會議</a>`:''}</div>
     ${p.body?`<p>${esc(p.body)}</p>`:''}
     ${p.reply?`<div class="reply"><b>護理長回覆：</b>${esc(p.reply)}</div>`:''}
@@ -979,9 +990,7 @@ async function loadMinutes(id, meeting){
     : `<div class="readbar"><span>未出席的同仁請閱讀後簽閱（評鑑佐證用）</span><button class="btn primary" type="button" id="mread">我已閱讀，簽閱</button></div>`;
   const bindRead = () => {
     const sh = $('#m_share'); if (sh) sh.onclick = async () => {
-      const text = `${meeting.title}（${meeting.date}）會議紀錄已公開，請點連結閱讀：`;
-      try { if (navigator.share) return await navigator.share({title:`${meeting.title} 會議紀錄`, text, url:link}); } catch(e){ if (e.name==='AbortError') return; }
-      try { await navigator.clipboard.writeText(text + '\n' + link); toast('已複製，可以貼到任何地方'); } catch(_) { prompt('複製這段文字：', text + ' ' + link); } };
+      shareLink(`${meeting.title} 會議紀錄`, `${meeting.title}（${meeting.date}）會議紀錄已公開，請點連結閱讀：`, link); };
     const b = $('#mread'); if (b) b.onclick = async () => { b.disabled = true;
     try{ await api('confirmRead',{meeting_id:id}); dd.me_read = true; toast('已簽閱，謝謝'); loadMinutes(id, meeting); }catch(e){ toast(e.message); b.disabled=false; } }; };
   if (!r.can_edit) {
@@ -997,13 +1006,13 @@ async function loadMinutes(id, meeting){
     <div class="row between"><h2>會議紀錄</h2><span class="chip ${mi.status==='published'?'ok':'warn'}">${mi.status==='published'?'已核定公開':'草稿（同仁看不到）'}</span></div>
     <div class="grid2">${HEAD_FIELDS.map(([k,t])=>`<label class="f" for="h_${k}">${t}<input id="h_${k}" value="${esc(mi.header[k]||(k==='time'?meeting.date:''))}"></label>`).join('')}</div>
     <div class="card stack" style="background:var(--bg)">
-      <h2 style="font-size:16.5px">用 AI 整理紀錄（擇一）</h2>
+      <h2 style="font-size:19px">用 AI 整理紀錄（擇一）</h2>
       <div class="grid2" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
         <div class="stack" style="gap:8px"><label class="f" for="m_audio">A. 上傳會議錄音（m4a／mp3，30MB 以內；紀錄核定 30 天後自動刪除）${mi.has_audio?'<span class="chip ok" style="align-self:flex-start">已上傳錄音</span>':''}<input id="m_audio" type="file" accept="audio/*"></label>
           <div class="row"><button class="btn" type="button" id="m_up">上傳錄音</button><button class="btn primary" type="button" id="m_ai_a">由錄音產生紀錄</button></div></div>
         <div class="stack" style="gap:8px"><label class="f" for="m_notes">B. 貼上會議筆記<textarea id="m_notes" placeholder="值日生的手寫或打字重點"></textarea></label>
           <div><button class="btn primary" type="button" id="m_ai_t">由筆記產生紀錄</button></div></div>
-        <div class="stack" style="gap:8px"><div class="f" style="font-size:14px;color:var(--fg-2)">C. 沒有錄音也沒有筆記</div>
+        <div class="stack" style="gap:8px"><div class="f" style="font-size:16px;color:var(--fg-2)">C. 沒有錄音也沒有筆記</div>
           <div class="muted small" style="margin:0">依會議報告（簡報內容與講者備註）、公告、投票結果、決議、提議與附件整理成紀錄。討論內容會標「〔會中討論待補〕」，請會後補上。</div>
           <div><button class="btn primary" type="button" id="m_ai_d">由會議資料產生紀錄</button></div></div>
       </div>
@@ -1011,7 +1020,7 @@ async function loadMinutes(id, meeting){
     </div>
     <div class="row"><button class="btn sm" type="button" id="m_fill">從簽到名單帶入出席／請假</button></div>
     <label class="f" for="m_body">紀錄內容（可直接編輯或手動輸入）<textarea id="m_body" style="min-height:420px;line-height:1.7">${esc(mi.body || TEMPLATE_BODY)}</textarea></label>
-    <div class="stack" style="gap:8px"><h2 style="font-size:16.5px">本次會議追蹤事項（列入決議追蹤）</h2>
+    <div class="stack" style="gap:8px"><h2 style="font-size:19px">本次會議追蹤事項（列入決議追蹤）</h2>
       <div id="m_fu" class="stack" style="gap:8px"></div>
       <div><button class="btn" type="button" id="m_addfu">＋ 新增一項</button></div>
       ${isAdmin()?'<div class="muted small">核定時，勾選的事項會加入「決議追蹤」。</div>':''}</div>
@@ -1151,6 +1160,7 @@ async function loadAttend(id, m){
   const box = $('#attend'); if (!box) return;
   let a; try { a = await api('listAttendance',{meeting_id:id}); } catch(e){ box.innerHTML = `<h2>出席簽到</h2><div class="muted">${esc(e.message)}</div>`; return; }
   if (curMeet) curMeet.attendance = a;
+  renderHours(id, m, a);
   const photos = (curMeet?.d.attachments||[]).filter(x=>x.kind==='簽到表');
   box.innerHTML = `<div class="row between"><h2>出席簽到</h2><div class="chips"><span class="chip teal">出席 ${a.n_present}</span><span class="chip">請假 ${a.n_leave}</span></div></div>
     <div class="row">${a.me?`<span class="chip ok">您已簽到（${esc(a.me)}）</span>`: a.today||a.can_edit ? `<button class="btn primary" type="button" id="selfIn">我已到場，簽到</button>` : `<span class="muted small">會議當天（${esc(m.date)}）可在這裡自行簽到</span>`}</div>
@@ -1184,6 +1194,44 @@ function showSignReview(id, people, reload){
   $('#sp_ok').onclick = async () => {
     const rows = [...out.querySelectorAll('tr[data-i]')].filter(r=>r.querySelector('input[type=checkbox]').checked).map(r=>{const i=r.querySelectorAll('input,select');return {unit:people[r.dataset.i].unit,name:i[1].value.trim(),staff_id:i[2].value.trim(),status:i[3].value}});
     try{ await api('checkinBatch',{meeting_id:id,people:rows}); toast('已登錄 '+rows.filter(r=>r.status!=='未到').length+' 人'); reload(); }catch(e){toast(e.message)} };
+}
+
+/* ===== 出席時數確認（紀錄者核對 → 確認；可下載 Excel、列印） ===== */
+const fmtH = h => h === '' || h == null ? '' : String(h);
+function renderHours(id, m, a){
+  const box = $('#hours'); if (!box) return;
+  if (!a.can_edit) { box.hidden = true; return; }
+  const ppl = a.list.filter(p=>p.status==='出席');
+  box.hidden = false;
+  const conf = ppl.filter(p=>p.confirmed_at);
+  const lastConf = [...conf].sort((x,y)=>String(y.confirmed_at).localeCompare(String(x.confirmed_at)))[0];
+  box.innerHTML = `<div class="row between"><h2>出席時數確認（OT）</h2><div class="chips">
+      ${lastConf?`<span class="chip ok">已確認 ${conf.length}/${ppl.length}・${esc(lastConf.confirmed_by)} ${esc(lastConf.confirmed_at.slice(5))}</span>`:`<span class="chip warn">待紀錄者確認</span>`}</div></div>
+    <div class="muted small" style="margin:0">紀錄者核對每位出席者的參與時數（0.5 小時為單位；遲到、早退請修正並寫備註），再按「確認時數」。</div>
+    ${ppl.length?`<div class="row"><label class="f" for="hr_all" style="flex-direction:row;align-items:center;gap:8px">會議時數<input id="hr_all" type="number" min="0" max="12" step="0.5" style="width:90px" placeholder="1.5"></label><button class="btn sm" type="button" id="hr_apply">套用到全部出席者</button></div>
+    <div class="tbl"><table><thead><tr><th>姓名</th><th>職稱</th><th>簽到</th><th style="width:110px">時數</th><th>備註（遲到、早退等）</th></tr></thead><tbody>
+      ${ppl.map(p=>`<tr data-k="${esc(p.key)}"><td>${esc(p.name||p.staff_id)}</td><td>${esc(p.title||'')}</td><td class="small">${esc(p.time)}<br><span class="muted">${esc(p.method)}</span></td>
+        <td><input type="number" min="0" max="12" step="0.5" value="${esc(fmtH(p.hours))}" aria-label="${esc(p.name)} 時數"></td><td><input value="${esc(p.hours_note||'')}" maxlength="60" aria-label="${esc(p.name)} 備註"></td></tr>`).join('')}
+    </tbody></table></div>
+    <div class="row"><button class="btn" type="button" id="hr_save">儲存</button><button class="btn primary" type="button" id="hr_ok">確認時數</button>
+      <button class="btn" type="button" id="hr_csv">下載 Excel</button><button class="btn" type="button" id="hr_pdf">列印／PDF</button></div>` : '<div class="empty">還沒有出席者</div>'}`;
+  if (!ppl.length) return;
+  const rowsData = () => [...box.querySelectorAll('tr[data-k]')].map(tr=>{ const i=tr.querySelectorAll('input'); return {key:tr.dataset.k, hours:i[0].value, note:i[1].value.trim()}; });
+  $('#hr_apply').onclick = () => { const v=$('#hr_all').value; if(v==='') return toast('請先輸入會議時數'); box.querySelectorAll('tr[data-k]').forEach(tr=>tr.querySelector('input').value=v); };
+  const save = async (confirm) => { const rows = rowsData();
+    if (confirm && rows.some(r=>r.hours==='')) return toast('還有人沒填時數');
+    try{ const r = await api('saveHours',{meeting_id:id, rows, confirm}); toast(confirm?'已確認時數':'已儲存'); if (curMeet) curMeet.attendance = r; renderHours(id, m, r); }catch(e){ toast(e.message); } };
+  $('#hr_save').onclick = () => save(false);
+  $('#hr_ok').onclick = () => save(true);
+  const table = () => ppl.map(p=>{ const r = rowsData().find(x=>x.key===p.key)||{}; return [m.title, m.date, p.name, p.title||'', p.time, p.method, r.hours, r.note, p.confirmed_by, p.confirmed_at]; });
+  const HEAD = ['會議','日期','姓名','職稱','簽到時間','簽到方式','時數','備註','確認者','確認時間'];
+  $('#hr_csv').onclick = () => { const q = v => `"${String(v??'').replace(/"/g,'""')}"`;
+    saveBlob(new Blob(['﻿' + [HEAD, ...table()].map(r=>r.map(q).join(',')).join('\r\n')], {type:'text/csv'}), `${m.meeting_id}_出席時數.csv`); };
+  $('#hr_pdf').onclick = () => { const t = table(); const sum = t.reduce((n,r)=>n+(Number(r[6])||0),0);
+    printDoc(`<div style="font-family:'Microsoft JhengHei',sans-serif"><h2 style="text-align:center">${esc(m.title)}　出席時數確認表</h2><p>會議日期：${esc(m.date)}　出席 ${t.length} 人　合計 ${sum} 小時</p>
+      <table style="border-collapse:collapse;width:100%;font-size:12pt"><tr>${['姓名','職稱','簽到','時數','備註'].map(h=>`<th style="border:1px solid #000;padding:4pt">${h}</th>`).join('')}</tr>
+      ${t.map(r=>`<tr>${[r[2],r[3],r[4],r[6],r[7]].map(v=>`<td style="border:1px solid #000;padding:4pt">${esc(v)}</td>`).join('')}</tr>`).join('')}</table>
+      <p style="margin-top:24pt">紀錄者確認：＿＿＿＿＿＿＿＿　　護理長：＿＿＿＿＿＿＿＿</p></div>`, '@page{size:A4;margin:16mm}'); };
 }
 
 /* ===== 現場簽到（刷卡／輸入員編／掃條碼） ===== */
