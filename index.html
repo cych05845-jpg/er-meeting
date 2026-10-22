@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>急診會議整合資料</title>
+<title>急診會議整合平台</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <script src="/account/edauth.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -168,6 +168,13 @@ td.item{min-width:220px}
 #qrModal .url{font-size:15px;color:var(--fg-2);overflow-wrap:anywhere}
 .empty{padding:22px;text-align:center;color:var(--fg-3)}
 .btn.sm{padding:3px 12px;font-size:13.5px}
+#busy{position:fixed;left:0;top:0;height:3px;width:100%;z-index:60;pointer-events:none;background:linear-gradient(90deg,transparent,var(--accent),transparent);background-size:40% 100%;background-repeat:no-repeat;animation:busy 1s linear infinite}
+@keyframes busy{from{background-position:-40% 0}to{background-position:140% 0}}
+@media (prefers-reduced-motion:reduce){#busy{animation:none;background:var(--accent);opacity:.6}}
+#viewer .vbar a{color:#E8EEEC;border:1px solid #3b4b4c;border-radius:999px;padding:5px 14px;text-decoration:none;font-size:14px;white-space:nowrap}
+#viewer .vbar button{white-space:nowrap}
+#viewer .vnote{color:#9fb1b0;font-size:13px;padding:4px 16px 8px}
+@media (max-width:640px){#viewer .vbar{flex-wrap:wrap}#viewer .vbar b{flex-basis:100%}}
 .btn.danger{color:var(--accent);border-color:var(--accent-soft)}
 .edit-box{background:var(--bg);border-radius:12px;padding:12px 14px;margin-top:8px}
 details.mgr{margin-top:12px;border-top:1px dashed var(--line);padding-top:8px}
@@ -200,7 +207,7 @@ tr.overdue td{background:var(--accent-soft)}
 <header><div class="wrap">
   <div class="hrow">
     <div class="brand"><span class="mark" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24"><path fill="#fff" d="M9.5 3h5v6.5H21v5h-6.5V21h-5v-6.5H3v-5h6.5z"/></svg></span>
-      <span>急診會議整合資料<small>ER MEETING HUB</small></span></div>
+      <span>急診會議整合平台<small>ER MEETING HUB</small></span></div>
     <button type="button" class="hbtn" id="learnBtn" aria-haspopup="dialog">ER-Learn QR</button>
     <div class="who" id="who"></div>
   </div>
@@ -214,8 +221,10 @@ tr.overdue td{background:var(--accent-soft)}
     <div class="url" id="qrUrl"></div>
     <div class="row" style="justify-content:center"><a class="btn primary" id="qrOpen" target="_blank" rel="noopener">開啟網站</a><button class="btn" type="button" id="qrCopy">複製連結</button><button class="btn" type="button" id="qrFs">全螢幕投影</button><button class="btn" type="button" id="qrClose">關閉</button></div>
   </div></div>
+<div id="busy" hidden></div>
 <div id="viewer" hidden>
-  <div class="vbar"><b id="vtitle"></b><button type="button" id="vfs">全螢幕</button><button type="button" id="vclose">關閉</button></div>
+  <div class="vbar"><b id="vtitle"></b><button type="button" id="vdl" hidden>下載</button><button type="button" id="vpdf" hidden>下載 PDF</button><a id="vext" target="_blank" rel="noopener" hidden>新分頁開啟</a><button type="button" id="vfs">全螢幕</button><button type="button" id="vclose">關閉</button></div>
+  <div class="vnote" id="vnote" hidden></div>
   <div id="vbody" style="flex:1;display:flex;min-height:0"></div>
 </div>
 
@@ -233,7 +242,7 @@ function toBoard(o){ window.open(CONFIG.BOARD_URL + '#publish=' + encodeURICompo
 function annToBoard(a){
   const d = String(a.event_date||'').slice(0,10);
   toBoard({ title:a.title, category:BOARD_CAT[a.category]||'會議', priority:a.pinned==='yes'?'urgent':'normal',
-    content:[d?'日期：'+d:'', a.body||'', '', '（來源：急診會議整合資料 '+(a.meeting_id||'')+' 會議宣導）'].filter((x,i)=>x||i>1).join('\n').trim(),
+    content:[d?'日期：'+d:'', a.body||'', '', '（來源：急診會議整合平台 '+(a.meeting_id||'')+' 會議宣導）'].filter((x,i)=>x||i>1).join('\n').trim(),
     display_days: 7, read_validity_days: 14 });
 }
 
@@ -263,7 +272,36 @@ function dateTile(d){
 function toast(msg){const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2400)}
 function fileB64(f){ return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(String(r.result).split(',')[1]);r.onerror=rej;r.readAsDataURL(f)}); }
 
+/* ===== 讀取快取：同一筆資料 60 秒內不重抓；任何寫入動作會清空快取 ===== */
+const READS = new Set(['listMeetings','listAnnouncements','listPolls','listProposals','listDecisions','getMeeting','listAttendance','getMinutes','getFile','listMinutesLog']);
+const qcache = new Map();
+const qkey = (a, b) => a + '|' + JSON.stringify(b||{});
+const clone = x => x == null ? x : JSON.parse(JSON.stringify(x));
+let busyN = 0;
+function busy(d){ busyN = Math.max(0, busyN + d); const b = document.getElementById('busy'); if (b) b.hidden = busyN === 0; }
 async function api(action, body={}){
+  if (READS.has(action)) {
+    const h = qcache.get(qkey(action, body));
+    if (h && Date.now() - h.t < (action==='getFile' ? 6e5 : 6e4)) return clone(h.data);
+  } else qcache.clear();
+  busy(1);
+  try { const d = await apiRaw(action, body); if (READS.has(action)) qcache.set(qkey(action, body), {t:Date.now(), data:clone(d)}); return d; }
+  finally { busy(-1); }
+}
+/** 一次送出多個讀取（首頁、會議頁），結果也放進快取 */
+async function apiBatch(calls){
+  const todo = calls.filter(([a,b]) => { const h = qcache.get(qkey(a,b)); return !(h && Date.now()-h.t < 6e4); });
+  if (todo.length) {
+    busy(1);
+    try {
+      const res = DEMO ? await Promise.all(todo.map(([a,b])=>mock(a,b||{}).then(data=>({ok:true,data})).catch(e=>({ok:false,error:e.message}))))
+                       : await apiRaw('batch', {calls: todo.map(([a,b])=>({action:a, ...(b||{})}))});
+      res.forEach((r,i) => { if (!r.ok) throw new Error(r.error); qcache.set(qkey(todo[i][0], todo[i][1]), {t:Date.now(), data:clone(r.data)}); });
+    } finally { busy(-1); }
+  }
+  return calls.map(([a,b]) => clone(qcache.get(qkey(a,b)).data));
+}
+async function apiRaw(action, body={}){
   if (DEMO) return mock(action, body);
   let j;
   if (CENTER()) j = await EDAuth.api(CONFIG.API_URL, {action, ...body});   // 帳號中心 token；過期會跳出登入後重送
@@ -277,7 +315,7 @@ async function api(action, body={}){
 }
 function logout(expired){
   if (CENTER()) return EDAuth.logout();
-  session = null; store.del('erm_session'); if (expired) toast('登入已過期，請重新登入'); location.hash = '#/home'; render();
+  session = null; store.del('erm_session'); qcache.clear(); if (expired) toast('登入已過期，請重新登入'); location.hash = '#/home'; render();
 }
 
 /* ===== 示範模式資料（僅供預覽；正式版資料存在 Google 試算表） ===== */
@@ -287,6 +325,7 @@ const M = {
     {meeting_id:'2026-08',date:'2026-08-27',title:'8月急診護理單位會議',status:'published',summary:'1–7月業務量與品質指標、異常事件統計、申訴與讚美、2026年度計畫與時間線、OT時數規範、自備藥與供應室宣導。'}
   ],
   attachments:[
+    {att_id:'A0',meeting_id:'2026-10',name:'（示範）雲端硬碟上的報告連結',mime:'text/uri-list',kind:'附件',url:'https://drive.google.com/file/d/1AbCdEfGhIjKlMnOp/view?usp=sharing'},
     {att_id:'A1',meeting_id:'2026-10',name:'2026年10月 會議報告',mime:'text/html',kind:'會議報告',demo_url:'reports/2026-10.html'},
     {att_id:'A2',meeting_id:'2026-10',name:'202609 急診品質指標暨業務報告.pdf',mime:'application/pdf',kind:'附件'},
     {att_id:'A3',meeting_id:'2026-08',name:'2026.08.27 會議簡報.pdf',mime:'application/pdf',kind:'會議報告'}
@@ -322,7 +361,7 @@ async function mock(action, b){
   const pv = p => ({...p,counts:(p.voted||!p.open||true)?p._votes:null});
   switch(action){
     case 'listMeetings': return M.meetings.map(m=>({...m,n_files:M.attachments.filter(a=>a.meeting_id===m.meeting_id).length,n_open:M.decisions.filter(d=>d.meeting_id===m.meeting_id&&d.status!=='已完成').length,n_polls_open:M.polls.filter(p=>p.meeting_id===m.meeting_id&&p.open).length})).sort((a,b)=>b.meeting_id.localeCompare(a.meeting_id));
-    case 'getMeeting': { const m=M.meetings.find(x=>x.meeting_id===b.meeting_id); if(!m) throw new Error('找不到這次會議');
+    case 'getMeeting': { const mid=b.meeting_id==='latest'?[...M.meetings].sort((x,y)=>y.meeting_id.localeCompare(x.meeting_id))[0].meeting_id:b.meeting_id; const m=M.meetings.find(x=>x.meeting_id===mid); if(!m) throw new Error('找不到這次會議');
       return {meeting:m,attachments:M.attachments.filter(a=>a.meeting_id===m.meeting_id),decisions:M.decisions.filter(d=>d.meeting_id===m.meeting_id),polls:M.polls.filter(p=>p.meeting_id===m.meeting_id).map(pv),can_scribe:true,today:true,minutes_published:M.minutes[m.meeting_id]?.status==='published',me_read:!!M.reads[m.meeting_id],me_present:M.attendance.some(a=>a.meeting_id===m.meeting_id&&a.staff_id===session.staff_id&&a.status==='出席')}; }
     case 'updatePoll': { const p=M.polls.find(x=>x.poll_id===b.poll_id); const x=b.poll; if(x.question) p.question=x.question; if(x.close_at!=null) p.close_at=x.close_at; if(x.status) p.open=x.status==='open';
       if(x.options){ const o=x.options.map(s=>s.trim()).filter(Boolean); if(p.total&&o.join()!==p.options.join()) throw new Error('已經有人投票，不能再改選項'); p.options=o; p._votes=o.map((_,i)=>p._votes[i]||0); } return pv(p); }
@@ -443,7 +482,7 @@ async function render(){
   stopScanner();
   chrome();
   const old = $('#app'); const app = old.cloneNode(false); old.replaceWith(app);   // 換頁時換新容器，避免上一頁還在載入的內容蓋過來
-  if (!session) return CENTER() ? (app.innerHTML = `<div class="card login stack"><div class="eyebrow">ER MEETING HUB</div><h1>登入急診會議整合資料</h1><p class="muted" style="margin:0">請使用 ED 帳號中心的員工編號與 PIN 登入。</p></div>`) : renderLogin(app);
+  if (!session) return CENTER() ? (app.innerHTML = `<div class="card login stack"><div class="eyebrow">ER MEETING HUB</div><h1>登入急診會議整合平台</h1><p class="muted" style="margin:0">請使用 ED 帳號中心的員工編號與 PIN 登入。</p></div>`) : renderLogin(app);
   if (session.must_change || route()[0]==='pin') return renderPin(app, session.must_change);
   const [r, a] = route();
   app.innerHTML = `<div class="empty">載入中…</div>`;
@@ -468,7 +507,7 @@ const pageHead = (eyebrow, title, extra='') => `<div class="page-head"><div><div
 /* ===== 簡易登入與變更 PIN ===== */
 function renderLogin(app){
   app.innerHTML = `<form class="card login stack" id="lf">
-    <div><div class="eyebrow">ER MEETING HUB</div><h1>登入急診會議整合資料</h1><p class="muted" style="margin:4px 0 0">使用與點班系統同一組員編＋PIN。還沒改過 PIN 的人，PIN 就是自己的員編。</p></div>
+    <div><div class="eyebrow">ER MEETING HUB</div><h1>登入急診會議整合平台</h1><p class="muted" style="margin:4px 0 0">使用與點班系統同一組員編＋PIN。還沒改過 PIN 的人，PIN 就是自己的員編。</p></div>
     <label class="f" for="sid">員工編號<input id="sid" autocomplete="username" required autocapitalize="characters"></label>
     <label class="f" for="pin">PIN<input id="pin" type="password" inputmode="numeric" autocomplete="current-password" minlength="4" maxlength="8" required></label>
     <div class="err" id="lerr"></div>
@@ -493,13 +532,21 @@ function renderPin(app, forced){
 
 /* ===== 首頁：本月會議 ===== */
 async function renderHome(app){
-  const [meetings, anns, polls, props, decs] = await Promise.all([api('listMeetings'), api('listAnnouncements'), api('listPolls'), api('listProposals'), api('listDecisions')]);
+  const ck = 'erm_home_' + (session?.staff_id || '');
+  const cached = store.get(ck);
+  if (cached) drawHome(app, cached);   // 先用上次的資料立刻顯示，背景再更新
+  const [meetings, anns, polls, props, decs, detail] = await apiBatch([['listMeetings'],['listAnnouncements'],['listPolls'],['listProposals'],['listDecisions'],['getMeeting',{meeting_id:'latest'}]]);
+  const data = {meetings, anns, polls, props, decs, detail};
+  if (!DEMO) store.set(ck, data);
+  if (app.isConnected) drawHome(app, data);
+}
+function drawHome(app, {meetings, anns, polls, props, decs, detail}){
   const m = meetings[0];
   const openPolls = polls.filter(p=>p.open);
   navBadges = {polls: openPolls.filter(p=>!p.voted).length || 0};
   chrome();
-  let detail = null, report = null;
-  if (m) { detail = await api('getMeeting',{meeting_id:m.meeting_id}); report = detail.attachments.find(a=>a.kind==='會議報告'); }
+  const report = detail ? detail.attachments.find(a=>a.kind==='會議報告') : null;
+  if (detail) curMeet = {d:detail, atts:numberAtts(detail.attachments), attendance:null};
   const openDec = decs.filter(d=>d.status!=='已完成');
   const today = new Date().toISOString().slice(0,10);
   const upcoming = anns.filter(a=>a.pinned==='yes' || !a.event_date || a.event_date>=today).slice(0,5);
@@ -625,7 +672,7 @@ let curMeet = null;   // 目前會議（附件編號、出席名單，供會議�
 const numberAtts = atts => atts.filter(a=>a.kind!=='簽到表').map((a,i)=>({...a, no:'附件'+cnNum(i+1)}));
 function cnNum(n){ const c='一二三四五六七八九十'; return n<=10?c[n-1]:n<20?'十'+c[n-11]:String(n); }
 async function renderMeeting(app, id){
-  const d = await api('getMeeting',{meeting_id:id});
+  const [d] = await apiBatch([['getMeeting',{meeting_id:id}],['listAttendance',{meeting_id:id}],['getMinutes',{meeting_id:id}]]);
   const m = d.meeting;
   curMeet = {d, atts:numberAtts(d.attachments), attendance:null};
   const reports = d.attachments.filter(a=>a.kind==='會議報告');
@@ -921,23 +968,28 @@ async function loadMinutes(id, meeting){
   try { r = await api('getMinutes',{meeting_id:id}); } catch(e){ box.innerHTML = `<h2>會議紀錄</h2><div class="muted">${esc(e.message)}</div>`; return; }
   const mi = r.minutes || {header:{}, body:'', followups:[], status:'draft'};
   const dd = curMeet?.d || {};
-  const boardBtn = isAdmin() && mi.status==='published' ? `<button class="btn primary" type="button" id="m_board">發到必看板：請未出席同仁閱讀</button>` : '';
+  const link = `${SITE()}#/m/${id}`;
+  const shareBar = () => mi.status!=='published'
+    ? (isAdmin() ? `<div class="muted small">核定公開後才能分享。</div>` : '')
+    : `<div class="row"><button class="btn primary" type="button" id="m_share">分享</button></div>`;
   const readBar = () => mi.status!=='published' ? '' : CONFIG.SIGNOFF==='board'
-    ? `<div class="readbar"><span>閱讀後請到<a href="${esc(CONFIG.BOARD_URL)}" target="_blank" rel="noopener">必看板</a>這則公告按「我已閱讀」完成簽閱</span>${boardBtn}</div>`
+    ? shareBar()
     : dd.me_read ? `<div class="readbar"><span>✓ 您已簽閱本次會議紀錄</span></div>`
     : dd.me_present ? `<div class="readbar"><span>您已出席本次會議，不需另外簽閱</span></div>`
     : `<div class="readbar"><span>未出席的同仁請閱讀後簽閱（評鑑佐證用）</span><button class="btn primary" type="button" id="mread">我已閱讀，簽閱</button></div>`;
-  const bindRead = () => { const bb = $('#m_board'); if (bb) bb.onclick = () => {
-      const due = new Date(Date.now()+14*864e5); const dueS = new Date(due.getTime()-due.getTimezoneOffset()*6e4).toISOString().slice(0,10);
-      toBoard({ title:`請閱讀「${meeting.title}」會議紀錄`, category:'會議', priority:'normal', is_task:true, task_deadline:dueS, display_days:7, read_validity_days:30,
-        content:`${meeting.title}（${meeting.date}）會議紀錄已核定公開。\n未出席的同仁請於 ${dueS} 前閱讀，閱讀後按「我已閱讀並完成」。\n\n會議紀錄：${SITE()}#/m/${id}` }); };
+  const bindRead = () => {
+    const sh = $('#m_share'); if (sh) sh.onclick = async () => {
+      const text = `${meeting.title}（${meeting.date}）會議紀錄已公開，請點連結閱讀：`;
+      try { if (navigator.share) return await navigator.share({title:`${meeting.title} 會議紀錄`, text, url:link}); } catch(e){ if (e.name==='AbortError') return; }
+      try { await navigator.clipboard.writeText(text + '\n' + link); toast('已複製，可以貼到任何地方'); } catch(_) { prompt('複製這段文字：', text + ' ' + link); } };
     const b = $('#mread'); if (b) b.onclick = async () => { b.disabled = true;
     try{ await api('confirmRead',{meeting_id:id}); dd.me_read = true; toast('已簽閱，謝謝'); loadMinutes(id, meeting); }catch(e){ toast(e.message); b.disabled=false; } }; };
   if (!r.can_edit) {
     box.innerHTML = r.minutes
-      ? `<div class="row between"><h2>會議紀錄</h2><button class="btn" type="button" id="mdoc">下載 Word 檔</button></div>${readBar()}${headTable(mi.header)}<div style="white-space:pre-wrap;color:var(--fg-2)">${esc(mi.body)}</div>`
+      ? `<div class="row between"><h2>會議紀錄</h2><div class="row"><button class="btn" type="button" id="mdoc">下載 Word 檔</button><button class="btn" type="button" id="mpdf">下載 PDF</button></div></div>${readBar()}${headTable(mi.header)}<div style="white-space:pre-wrap;color:var(--fg-2)">${esc(mi.body)}</div>`
       : `<h2>會議紀錄</h2><div class="muted">會議紀錄整理中，核定後會公告在這裡。</div>`;
     const b = $('#mdoc'); if (b) b.onclick = () => downloadDoc(meeting, mi);
+    const bp = $('#mpdf'); if (bp) bp.onclick = () => downloadPdf(meeting, mi);
     bindRead();
     return;
   }
@@ -963,8 +1015,8 @@ async function loadMinutes(id, meeting){
       <div id="m_fu" class="stack" style="gap:8px"></div>
       <div><button class="btn" type="button" id="m_addfu">＋ 新增一項</button></div>
       ${isAdmin()?'<div class="muted small">核定時，勾選的事項會加入「決議追蹤」。</div>':''}</div>
-    <div class="row"><button class="btn" type="button" id="m_save">${mi.status==='published'?'儲存修改':'儲存草稿'}</button><button class="btn" type="button" id="m_doc">下載 Word 檔</button>${isAdmin()?(mi.status==='published'?'<button class="btn" type="button" id="m_reopen">退回草稿</button>':'<button class="btn primary" type="button" id="m_ok">核定並公開</button>'):''}</div>
-    ${readBar()}
+    <div class="row"><button class="btn" type="button" id="m_save">${mi.status==='published'?'儲存修改':'儲存草稿'}</button><button class="btn" type="button" id="m_doc">下載 Word 檔</button><button class="btn" type="button" id="m_pdf">下載 PDF</button>${isAdmin()?(mi.status==='published'?'<button class="btn" type="button" id="m_reopen">退回草稿</button>':'<button class="btn primary" type="button" id="m_ok">核定並公開</button>'):''}</div>
+    ${mi.status==='published'?readBar():shareBar()}
     <details class="mgr" id="m_ver"><summary>修改紀錄（每次儲存、AI 產生、核定都會留一版）</summary><div id="m_verlist" class="muted small" style="margin-top:6px">載入中…</div></details>
     ${isAdmin()&&mi.status==='published'&&CONFIG.SIGNOFF!=='board'?'<details class="mgr" id="m_rd"><summary>簽閱情形</summary><div id="m_rdlist" class="muted small" style="margin-top:6px">載入中…</div></details>':''}`;
   bindRead();
@@ -1000,6 +1052,7 @@ async function loadMinutes(id, meeting){
   let restoreOf = '';
   $('#m_save').onclick = async () => { busy(true); try{ await api('saveMinutes',{meeting_id:id,minutes:strip(collect()),restore_of:restoreOf||undefined}); toast('已儲存草稿'); reload(); }catch(e){ toast(e.message); busy(false);} };
   $('#m_doc').onclick = () => downloadDoc(meeting, collect());
+  $('#m_pdf').onclick = () => downloadPdf(meeting, collect());
   $('#m_up').onclick = async () => { const f=$('#m_audio').files[0]; if(!f) return toast('請先選擇錄音檔');
     if (f.size > 30*1048576) return toast('錄音檔超過 30MB');
     busy(true,'上傳錄音中…'); try{ await api('uploadAudio',{meeting_id:id,name:f.name,mime:f.type||'audio/mp4',base64:await fileB64(f)}); toast('錄音已上傳'); reload(); }catch(e){ toast(e.message); busy(false);} };
@@ -1019,6 +1072,10 @@ async function loadMinutes(id, meeting){
 function headTable(h){ return `<div class="tbl"><table><tbody>${HEAD_FIELDS.filter(([k])=>h[k]).map(([k,t])=>`<tr><th style="width:140px">${t.replace(/（.*）/,'')}</th><td>${esc(h[k])}</td></tr>`).join('')}</tbody></table></div>`; }
 function confirmReplace(){ return window.confirm('AI 產生的草稿會取代目前的紀錄內容，確定嗎？'); }
 function downloadDoc(meeting, mi){
+  saveBlob(new Blob(['\ufeff'+docHtml(meeting, mi)],{type:'application/msword'}), `${meeting.meeting_id}_會議紀錄.doc`);
+}
+function downloadPdf(meeting, mi){ printDoc(docHtml(meeting, mi), '@page{size:A4;margin:16mm 14mm}'); }
+function docHtml(meeting, mi){
   const h = mi.header || {};
   const td = (v, x='') => `<td style="border:1px solid #000;padding:5pt 6pt;font-size:13pt;${x}">${v}</td>`;
   const lab = v => td(v, 'text-align:center;width:16%');
@@ -1054,9 +1111,7 @@ function downloadDoc(meeting, mi){
   ${atts.length?`<br><br><b>附件</b><br>${atts.map(a=>`${a.no}：${esc(a.name)}${a.url?'　'+esc(a.url):''}`).join('<br>')}`:''}</td></tr>
   <tr><td style="border:1px solid #000;padding:10pt;font-size:13pt;height:60pt">主席簽章：${'&nbsp;'.repeat(40)}主管簽章：</td></tr></table>
   </body></html>`;
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(new Blob(['﻿'+html],{type:'application/msword'}));
-  a.download = `${meeting.meeting_id}_會議紀錄.doc`; document.body.appendChild(a); a.click(); a.remove();
+  return html;
 }
 
 /* ===== 上傳與附件 ===== */
@@ -1076,7 +1131,7 @@ function renderAtts(id, d){
   curMeet.atts = list;
   box.innerHTML = `<div class="row between"><h2>附件</h2><span class="muted small">會議紀錄引用時寫「（附件一）」</span></div>
     <div class="files">${list.map(a=>`<div class="file"><span class="att-no">${a.no}</span><span class="chip">${esc(a.kind||'附件')}</span><span class="n">${esc(a.name)}${a.url?`<br><span class="muted small">${esc(a.url)}</span>`:''}</span>
-      <button class="btn sm" type="button" data-open="${esc(a.att_id)}">${a.url?'開啟連結':'開啟'}</button>${can && (isAdmin()||a.kind!=='會議報告')?`<button class="btn sm" type="button" data-del="${esc(a.att_id)}" aria-label="刪除 ${esc(a.name)}">刪除</button>`:''}</div>`).join('') || '<div class="empty">還沒有附件</div>'}</div>
+      <button class="btn sm" type="button" data-open="${esc(a.att_id)}">開啟</button>${can && (isAdmin()||a.kind!=='會議報告')?`<button class="btn sm" type="button" data-del="${esc(a.att_id)}" aria-label="刪除 ${esc(a.name)}">刪除</button>`:''}</div>`).join('') || '<div class="empty">還沒有附件</div>'}</div>
     ${can?`<div class="addbox stack" style="gap:10px">
       <form class="grid2" id="lk" style="grid-template-columns:minmax(0,1fr) minmax(0,2fr) auto;align-items:end">
         <label class="f" for="lk_n">附件名稱<input id="lk_n" placeholder="例：9月品質指標報告"></label>
@@ -1183,7 +1238,7 @@ async function renderCheckin(app, id){
 
 /* ===== 會議現場（同仁掃 QR 進來：簽到＋投票） ===== */
 async function renderLive(app, id){
-  const [d, a] = await Promise.all([api('getMeeting',{meeting_id:id}), api('listAttendance',{meeting_id:id})]);
+  const [d, a] = await apiBatch([['getMeeting',{meeting_id:id}],['listAttendance',{meeting_id:id}]]);
   const m = d.meeting; const open = d.polls.filter(p=>p.open);
   app.innerHTML = `<div class="stack bigpoll">${demoBanner()}
     <section class="card hero"><div><div class="eyebrow">會議現場</div><h1>${esc(m.title)}</h1><div class="meta">${esc(m.date)}　｜　${esc(session.name)}</div></div></section>
@@ -1201,23 +1256,73 @@ async function renderVote(app, pid){
 }
 
 /* ===== 檔案檢視：登入後才從後端取檔，不公開雲端硬碟連結 ===== */
+const REPORT_PRINT_CSS = `@page{size:1920px 1080px;margin:0}
+html,body{height:auto!important;overflow:visible!important;background:#fff!important}
+#bar,#notes,#help{display:none!important}
+#viewport{position:static!important;display:block!important}
+#deck{transform:none!important;width:1920px!important;height:auto!important;position:static!important}
+#deck>section{position:relative!important;inset:auto!important;opacity:1!important;visibility:visible!important;transform:none!important;box-shadow:none!important;transition:none!important;break-after:page;page-break-after:always}
+#deck [data-build-in]{opacity:1!important;transform:none!important;transition:none!important}
+*{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}`;
+/** 產生 PDF：在隱藏框架開啟列印視窗，選「另存為 PDF」（手機選「分享 › 儲存為 PDF」） */
+function printDoc(html, css){
+  toast('列印視窗開啟後，目的地選「另存為 PDF」');
+  const fr = document.createElement('iframe');
+  fr.setAttribute('sandbox','allow-scripts allow-modals'); fr.title = '列印';
+  fr.style.cssText = 'position:fixed;right:0;bottom:0;width:1200px;height:800px;border:0;opacity:0;pointer-events:none';
+  const inj = `<style>${css||''}@media print{*{-webkit-print-color-adjust:exact;print-color-adjust:exact}}</style><script>addEventListener('load',function(){setTimeout(function(){print()},900)})<\/script>`;
+  fr.srcdoc = /<\/head>/i.test(html) ? html.replace(/<\/head>/i, inj + '</head>') : '<!doctype html><html><head><meta charset="utf-8">' + inj + '</head><body>' + html + '</body></html>';
+  document.body.appendChild(fr); setTimeout(() => fr.remove(), 180000);
+}
+function saveBlob(blob, name){ const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(a.href), 60000); }
+/** 外部網址轉成可在網站內顯示的版本：Google 雲端硬碟／文件／簡報／試算表用 preview，並提供下載與 PDF 匯出 */
+function linkInfo(u){
+  let m;
+  if ((m = /docs\.google\.com\/(document|presentation|spreadsheets)\/d\/([\w-]+)/.exec(u))) {
+    const t = m[1], id = m[2];
+    return { embed:`https://docs.google.com/${t}/d/${id}/preview`, pdf: t==='presentation' ? `https://docs.google.com/presentation/d/${id}/export/pdf` : `https://docs.google.com/${t}/d/${id}/export?format=pdf`, google:true };
+  }
+  if (/drive\.google\.com/.test(u) && (m = /\/file\/d\/([\w-]+)/.exec(u) || /[?&]id=([\w-]+)/.exec(u)))
+    return { embed:`https://drive.google.com/file/d/${m[1]}/preview`, dl:`https://drive.google.com/uc?export=download&id=${m[1]}`, google:true };
+  if (/\.pdf(\?|#|$)/i.test(u)) return { embed:u, dl:u, pdf:u };
+  return { embed:u };
+}
+function viewerSetup(title, opts){
+  const v=$('#viewer'); v.hidden=false; $('#vtitle').textContent = title;
+  const set = (id, fn) => { const b=$(id); b.hidden = !fn; if (fn) b.onclick = fn; };
+  set('#vdl', opts.dl); set('#vpdf', opts.pdf);
+  const ext = $('#vext'); ext.hidden = !opts.ext; if (opts.ext) ext.href = opts.ext;
+  const n = $('#vnote'); n.hidden = !opts.note; n.textContent = opts.note || '';
+}
 async function openFile(id){
-  const link = (curMeet?.d.attachments||[]).find(a=>a.att_id===id && a.url);
-  if (link) return window.open(link.url, '_blank', 'noopener');
-  const v=$('#viewer'), body=$('#vbody');
-  body.innerHTML='<div class="empty" style="color:#bbb;flex:1">載入中…</div>'; v.hidden=false;
+  const att = (curMeet?.d.attachments||[]).find(a=>a.att_id===id);
+  const body=$('#vbody');
+  if (att && att.url) {
+    const L = linkInfo(att.url);
+    viewerSetup(att.name, { ext: att.url, dl: L.dl ? ()=>window.open(L.dl,'_blank','noopener') : null, pdf: L.pdf ? ()=>window.open(L.pdf,'_blank','noopener') : null,
+      note: L.google ? '雲端硬碟檔案需用有權限的 Google 帳號登入才看得到；看不到請按「新分頁開啟」。' : '有些網站不允許嵌入顯示，空白的話請按「新分頁開啟」。' });
+    const fr = document.createElement('iframe'); fr.src = L.embed; fr.title = att.name; fr.setAttribute('allow','fullscreen'); fr.setAttribute('allowfullscreen','');
+    fr.setAttribute('referrerpolicy','no-referrer'); body.replaceChildren(fr); return;
+  }
+  viewerSetup(att?.name || '載入中…', {});
+  body.innerHTML='<div class="empty" style="color:#bbb;flex:1">載入中…（第一次開啟較久，之後 10 分鐘內會很快）</div>';
   try{
     const f = await api('getFile',{att_id:id});
-    $('#vtitle').textContent = f.name;
+    if (f.url) { $('#viewer').hidden=true; return window.open(f.url,'_blank','noopener'); }
+    const bytes = () => Uint8Array.from(atob(f.base64), c=>c.charCodeAt(0));
     let html = f.text;
-    if (!html && f.mime==='text/html') html = new TextDecoder().decode(Uint8Array.from(atob(f.base64),c=>c.charCodeAt(0)));
-    if (f.url){ v.hidden=true; return window.open(f.url,'_blank','noopener'); }
-    if (!/^(text\/html|application\/pdf|image\/)/.test(f.mime)){ v.hidden=true;
-      const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([Uint8Array.from(atob(f.base64),c=>c.charCodeAt(0))],{type:f.mime})); a.download=f.name; document.body.appendChild(a); a.click(); a.remove(); return toast('已下載 '+f.name); }
-    if (f.mime==='text/html'){ const fr=document.createElement('iframe'); fr.setAttribute('sandbox','allow-scripts'); fr.setAttribute('allow','fullscreen'); fr.setAttribute('allowfullscreen',''); fr.title=f.name; fr.srcdoc=html; body.replaceChildren(fr); setTimeout(()=>fr.focus(),300); }
-    else { const blob=new Blob([Uint8Array.from(atob(f.base64),c=>c.charCodeAt(0))],{type:f.mime}); const url=URL.createObjectURL(blob);
-      const el = f.mime.startsWith('image/') ? Object.assign(document.createElement('img'),{src:url,alt:f.name}) : Object.assign(document.createElement('iframe'),{src:url,title:f.name});
-      body.replaceChildren(el); }
+    if (!html && f.mime==='text/html') html = new TextDecoder().decode(bytes());
+    if (!/^(text\/html|application\/pdf|image\/)/.test(f.mime)) { $('#viewer').hidden=true; saveBlob(new Blob([bytes()],{type:f.mime}), f.name); return toast('已下載 '+f.name+'（Word／PPT 請另存 PDF 上傳，就能在網站內直接看）'); }
+    if (f.mime==='text/html'){
+      viewerSetup(f.name, { dl: ()=>saveBlob(new Blob([html],{type:'text/html'}), f.name.replace(/\.html?$/i,'')+'.html'), pdf: ()=>printDoc(html, REPORT_PRINT_CSS) });
+      const fr=document.createElement('iframe'); fr.setAttribute('sandbox','allow-scripts'); fr.setAttribute('allow','fullscreen'); fr.setAttribute('allowfullscreen',''); fr.title=f.name; fr.srcdoc=html; body.replaceChildren(fr); setTimeout(()=>fr.focus(),300);
+    } else {
+      const blob = new Blob([bytes()],{type:f.mime}); const url = URL.createObjectURL(blob);
+      const isImg = f.mime.startsWith('image/');
+      viewerSetup(f.name, { dl: ()=>saveBlob(blob, f.name), pdf: isImg ? ()=>printDoc(`<img src="data:${f.mime};base64,${f.base64}" style="max-width:100%">`, '@page{margin:10mm}') : ()=>saveBlob(blob, /\.pdf$/i.test(f.name)?f.name:f.name+'.pdf') });
+      const el = isImg ? Object.assign(document.createElement('img'),{src:url,alt:f.name}) : Object.assign(document.createElement('iframe'),{src:url,title:f.name});
+      body.replaceChildren(el);
+    }
   }catch(e){ body.innerHTML=`<div class="empty" style="color:#ddd;flex:1">${esc(e.message)}</div>`; }
 }
 $('#vclose').onclick=()=>{ $('#viewer').hidden=true; $('#vbody').innerHTML=''; };
@@ -1226,7 +1331,7 @@ addEventListener('keydown',e=>{ if(e.key==='Escape' && !$('#qrModal').hidden) $(
 
 /* ===== 啟動：簡易登入；帳號中心接好後把 CONFIG.AUTH 改成 'center' ===== */
 if (DEMO) { session = {staff_id:'00000', name:'示範帳號', role:'admin'}; render(); }
-else if (CENTER()) { EDAuth.init({ app:'meeting', appName:'急診會議整合資料' }).then(u => { session = u; render(); }); render(); }
+else if (CENTER()) { EDAuth.init({ app:'meeting', appName:'急診會議整合平台' }).then(u => { session = u; render(); }); render(); }
 else { session = store.get('erm_session'); render(); }
 </script>
 </body>
