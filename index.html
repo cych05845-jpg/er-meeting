@@ -271,8 +271,9 @@ function dateTile(d){
 }
 /** 分享：手機叫出分享選單；電腦複製文字＋連結，可貼到任何地方 */
 async function shareLink(title, text, url){
-  try { if (navigator.share) return await navigator.share({title, text, url}); } catch(e){ if (e.name==='AbortError') return; }
-  try { await navigator.clipboard.writeText(text + '\n' + url); toast('已複製連結，可以貼到任何地方'); } catch(_) { prompt('複製這段文字：', text + ' ' + url); }
+  const mobile = matchMedia('(pointer:coarse)').matches && /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  if (mobile && navigator.share) { try { return await navigator.share({title, text, url}); } catch(e){ if (e.name==='AbortError') return; } }
+  try { await navigator.clipboard.writeText(text + '\n' + url); toast('已複製連結，可以貼到 LINE、Email 或任何地方'); } catch(_) { prompt('複製這段文字：', text + ' ' + url); }
 }
 const shareMeeting = m => shareLink(m.title, `${m.title}（${m.date}）會議資料與紀錄，請點連結閱讀：`, `${SITE()}#/m/${m.meeting_id}`);
 function toast(msg){const t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=msg;document.body.appendChild(t);setTimeout(()=>t.remove(),2400)}
