@@ -197,7 +197,8 @@ td.item{min-width:220px}
 <script>
 /* ===== 設定：部署 GAS 後把網址貼到 API_URL；留空＝示範模式 ===== */
 const CONFIG = {
-  API_URL: 'https://script.google.com/macros/s/AKfycbx8HViEQEVPnJhGWogNhtGeFMc8N8So9p8FkpBivf6VBHo4StmLR8VrxZZwAdzPhb34wQ/exec',   // 本系統 GAS 網址；留空＝示範模式。登入一律走 ED 帳號中心（/account/edauth.js，系統代碼 meeting）
+  API_URL: 'https://script.google.com/macros/s/AKfycbx8HViEQEVPnJhGWogNhtGeFMc8N8So9p8FkpBivf6VBHo4StmLR8VrxZZwAdzPhb34wQ/exec',   // 本系統 GAS 網址；留空＝示範模式
+  AUTH: 'simple',      // 'simple'＝本網站簡易登入；帳號中心接好後改成 'center'（系統代碼 meeting）
   LEARN_URL: 'https://cych05845-jpg.github.io/er-learn/'   // ER-Learn 網址，請確認
 };
 
@@ -213,6 +214,7 @@ const statusChip = s => `<span class="chip ${s==='已完成'?'ok':s==='進行中
 const propChip = s => `<span class="chip ${({'待審閱':'','排入議程':'warn','已討論':'teal','已採納':'ok','暫不採納':''})[s]}">${esc(s)}</span>`;
 const store = { get(k){try{return JSON.parse(localStorage.getItem(k))}catch(_){return null}}, set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(_){}}, del(k){try{localStorage.removeItem(k)}catch(_){}} };
 let session = null;
+const CENTER = () => CONFIG.AUTH === 'center' && window.EDAuth;
 const WD = '日一二三四五六';
 function dateTile(d){
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(d||'');
@@ -225,9 +227,19 @@ function fileB64(f){ return new Promise((res,rej)=>{const r=new FileReader();r.o
 
 async function api(action, body={}){
   if (DEMO) return mock(action, body);
-  const j = await EDAuth.api(CONFIG.API_URL, {action, ...body});   // 自動帶帳號中心 token；過期會跳出登入後重送
+  let j;
+  if (CENTER()) j = await EDAuth.api(CONFIG.API_URL, {action, ...body});   // 帳號中心 token；過期會跳出登入後重送
+  else {
+    const r = await fetch(CONFIG.API_URL, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({action, token: session?.token, ...body})});
+    j = await r.json();
+    if (!j.ok && j.error === 'AUTH_REQUIRED') { logout(true); throw new Error('請重新登入'); }
+  }
   if (!j.ok) throw new Error(j.error === 'FORBIDDEN' ? '沒有權限' : j.error);
   return j.data;
+}
+function logout(expired){
+  if (CENTER()) return EDAuth.logout();
+  session = null; store.del('erm_session'); if (expired) toast('登入已過期，請重新登入'); location.hash = '#/home'; render();
 }
 
 /* ===== 示範模式資料（僅供預覽；正式版資料存在 Google 試算表） ===== */
@@ -311,15 +323,16 @@ function chrome(){
   const cur = r==='m' ? 'records' : r;
   $('#nav').innerHTML = session ? links.map(([k,t])=>`<a href="#/${k}" ${cur===k?'aria-current="page"':''}>${t}${navBadges[k]?`<span class="badge">${navBadges[k]}</span>`:''}</a>`).join('') : '';
   $('#nav').hidden = !session;
-  $('#who').innerHTML = session ? `<span>${esc(session.name)}</span>${DEMO?'':'<button type="button" id="chpin">變更 PIN</button><a class="hbtn" style="text-decoration:none" href="/account/">帳號中心</a>'}<button type="button" id="logout">登出</button>` : '';
+  $('#who').innerHTML = session ? `<span>${esc(session.name)}</span>${DEMO?'':`<button type="button" id="chpin">變更 PIN</button>${CENTER()?'<a class="hbtn" style="text-decoration:none" href="/account/">帳號中心</a>':''}`}<button type="button" id="logout">登出</button>` : '';
   if (!session) return;
-  $('#logout').onclick = () => DEMO ? toast('示範模式不需登出') : EDAuth.logout();
-  const cp = $('#chpin'); if (cp) cp.onclick = () => EDAuth.changePin().then(()=>toast('已變更 PIN')).catch(()=>{});
+  $('#logout').onclick = () => DEMO ? toast('示範模式不需登出') : logout();
+  const cp = $('#chpin'); if (cp) cp.onclick = () => CENTER() ? EDAuth.changePin().then(()=>toast('已變更 PIN')).catch(()=>{}) : (location.hash = '#/pin');
 }
 async function render(){
   chrome();
   const app = $('#app');
-  if (!session) { app.innerHTML = `<div class="card login stack"><div class="eyebrow">ER MEETING HUB</div><h1>登入急診會議整合資料</h1><p class="muted" style="margin:0">請使用 ED 帳號中心的員工編號與 PIN 登入。</p>${!DEMO && !window.EDAuth ? '<div class="err">登入模組載入失敗，請確認帳號中心網站（/account/）可以開啟。</div>' : ''}</div>`; return; }
+  if (!session) return CENTER() ? (app.innerHTML = `<div class="card login stack"><div class="eyebrow">ER MEETING HUB</div><h1>登入急診會議整合資料</h1><p class="muted" style="margin:0">請使用 ED 帳號中心的員工編號與 PIN 登入。</p></div>`) : renderLogin(app);
+  if (session.must_change || route()[0]==='pin') return renderPin(app, session.must_change);
   const [r, a] = route();
   app.innerHTML = `<div class="empty">載入中…</div>`;
   try {
@@ -336,6 +349,32 @@ async function render(){
 }
 const demoBanner = () => DEMO ? `<div class="banner">示範模式：資料為範例，投票、提議與編輯不會保存。部署 Google Apps Script 後會改用正式資料。</div>` : '';
 const pageHead = (eyebrow, title, extra='') => `<div class="page-head"><div><div class="eyebrow">${eyebrow}</div><h1>${title}</h1></div>${extra}</div>`;
+
+/* ===== 簡易登入與變更 PIN ===== */
+function renderLogin(app){
+  app.innerHTML = `<form class="card login stack" id="lf">
+    <div><div class="eyebrow">ER MEETING HUB</div><h1>登入急診會議整合資料</h1><p class="muted" style="margin:4px 0 0">使用與點班系統同一組員編＋PIN。還沒改過 PIN 的人，PIN 就是自己的員編。</p></div>
+    <label class="f" for="sid">員工編號<input id="sid" autocomplete="username" required autocapitalize="characters"></label>
+    <label class="f" for="pin">PIN<input id="pin" type="password" inputmode="numeric" autocomplete="current-password" minlength="4" maxlength="8" required></label>
+    <div class="err" id="lerr"></div>
+    <button class="btn primary big" type="submit">登入</button></form>`;
+  $('#lf').onsubmit = async e => { e.preventDefault(); $('#lerr').textContent='';
+    try { session = await api('login',{staff_id:$('#sid').value.trim(), pin:$('#pin').value}); store.set('erm_session',session); render(); }
+    catch(err){ $('#lerr').textContent = err.message; } };
+}
+function renderPin(app, forced){
+  app.innerHTML = `<form class="card login stack" id="pf2">
+    <div><div class="eyebrow">帳號</div><h1>${forced?'第一次登入，請設定新 PIN':'變更 PIN'}</h1><p class="muted" style="margin:4px 0 0">新 PIN 為 4–8 位數字，不能用員編、重複或連續數字。</p></div>
+    <label class="f" for="op">${forced?'目前的 PIN（未改過＝員編）':'目前的 PIN'}<input id="op" type="password" inputmode="numeric" autocomplete="current-password" required></label>
+    <label class="f" for="np1">新 PIN<input id="np1" type="password" inputmode="numeric" autocomplete="new-password" pattern="\\d{4,8}" required></label>
+    <label class="f" for="np2">再輸入一次<input id="np2" type="password" inputmode="numeric" autocomplete="new-password" required></label>
+    <div class="err" id="perr"></div>
+    <div class="row"><button class="btn primary big" type="submit">確認變更</button>${forced?'':'<a class="btn" href="#/home">取消</a>'}</div></form>`;
+  $('#pf2').onsubmit = async e => { e.preventDefault(); $('#perr').textContent='';
+    if ($('#np1').value !== $('#np2').value) return $('#perr').textContent = '兩次輸入的新 PIN 不一樣';
+    try { await api('changePin',{old_pin:$('#op').value,new_pin:$('#np1').value}); session.must_change=false; store.set('erm_session',session); toast('已變更 PIN'); location.hash='#/home'; render(); }
+    catch(err){ $('#perr').textContent = err.message; } };
+}
 
 /* ===== 首頁：本月會議 ===== */
 async function renderHome(app){
@@ -611,6 +650,7 @@ async function renderAdmin(app){
     if (/^\d{4}-\d{2}-\d{2}$/.test(m.date)) $('#m_date').value = m.date;
     $('#m_title').value = m.title||''; $('#m_sum').value = m.summary||''; $('#m_status').value = m.status==='published'?'published':'draft'; $('#m_scribes').value = m.scribes||''; };
   $('#m_id').addEventListener('change', fill); fill();
+  if (!DEMO && !CENTER() && session.auth !== 'account') renderStaffAdmin(app);
   const run = (id, fn) => { $(id).onsubmit = async e => { e.preventDefault(); try{ await fn(e); }catch(err){ toast(err.message); } }; };
   run('#fm', async () => { await api('saveMeeting',{meeting:{meeting_id:$('#m_id').value.trim(),date:$('#m_date').value,title:$('#m_title').value,summary:$('#m_sum').value,status:$('#m_status').value,scribes:$('#m_scribes').value}}); toast('已儲存會議'); renderAdmin(app); });
   run('#ff', async e => { const f=$('#f_file').files[0]; if(!f) return; let mime=f.type||''; if(/\.html?$/i.test(f.name)) mime='text/html';
@@ -618,6 +658,45 @@ async function renderAdmin(app){
   run('#fa', async e => { await api('saveAnnouncement',{announcement:{category:$('#a_cat').value,event_date:$('#a_date').value,expires:$('#a_exp').value,meeting_id:$('#a_m').value,title:$('#a_title').value,body:$('#a_body').value,pinned:$('#a_pin').checked}}); toast('已發布公告'); e.target.reset(); });
   run('#fp', async e => { await api('savePoll',{poll:{meeting_id:$('#p_m').value,question:$('#p_q').value,options:$('#p_opts').value.split('\n'),close_at:$('#p_close').value}}); toast('已建立投票'); e.target.reset(); });
   run('#fd', async e => { await api('saveDecision',{decision:{meeting_id:$('#d_m').value,item:$('#d_item').value,owner:$('#d_owner').value,due:$('#d_due').value,status:'未開始'}}); toast('已新增決議'); e.target.reset(); });
+}
+
+/* ===== 人員名單（簡易登入） ===== */
+// 支援帳號中心整列（員編 姓名 類別 職稱 權限 啟用 …）或「員編 姓名 [admin]」
+function parseStaffLine(line){
+  const t = line.replace(/\r/g,'');
+  if (!t.trim()) return null;
+  const a = (t.includes('\t') ? t.split('\t') : t.trim().split(/[ ,，]+/)).map(s=>s.trim());
+  if (!a[0] || !a[1] || a[0]==='員編') return null;
+  if (a.length >= 6) {
+    const admin = /account\.admin|meeting\.admin/.test(a[4]||'') || /護理長/.test(a[3]||'');
+    return { staff_id:a[0], name:a[1], role: admin?'admin':'rn', status: a[5]==='否' ? '停用' : '在職' };
+  }
+  return { staff_id:a[0], name:a[1], role: /admin|管理/i.test(a[2]||'') ? 'admin' : 'rn' };
+}
+
+async function renderStaffAdmin(app){
+  const box = document.createElement('section'); box.className = 'card stack'; app.querySelector('.stack').appendChild(box);
+  const draw = async () => {
+    const list = await api('listStaff');
+    box.innerHTML = `<div class="row between"><h2>人員名單（${list.length} 人）</h2><span class="muted small">帳號中心接好後可停用此名單</span></div>
+      <label class="f" for="st_paste">新增同仁：可直接從帳號中心「人員」分頁整列複製貼上（含標題列也可以）；或一行一位「員編 姓名」，管理者在後面加 admin
+        <textarea id="st_paste" placeholder="12345 王小明&#10;23456 李小華 admin"></textarea></label>
+      <div><button class="btn primary" type="button" id="st_add">加入名單並產生臨時 PIN</button></div>
+      <div id="st_out"></div>
+      <div class="tbl"><table><thead><tr><th>員編</th><th>姓名</th><th>角色</th><th>狀態</th><th></th></tr></thead><tbody>
+      ${list.map(s=>`<tr><td>${esc(s.staff_id)}</td><td>${esc(s.name)}</td><td>${s.role==='admin'?'管理者':'同仁'}</td><td>${esc(s.status||'在職')}${s.must_change==='yes'?'・待改 PIN':''}</td>
+        <td style="white-space:nowrap"><button class="btn" type="button" data-reset="${esc(s.staff_id)}">重設 PIN</button>
+        <button class="btn" type="button" data-toggle="${esc(s.staff_id)}">${s.status==='停用'?'啟用':'停用'}</button></td></tr>`).join('')}</tbody></table></div>`;
+    const showPins = (rows) => { $('#st_out').innerHTML = rows.length ? `<div class="banner">請把臨時 PIN 個別告知同仁，第一次登入會要求改 PIN。此清單只顯示這一次。<br>${rows.map(r=>`${esc(r.staff_id)} ${esc(r.name)}：<b>${esc(r.pin)}</b>`).join('<br>')}</div>` : '<div class="muted small">沒有新增的同仁（已在名單中的只更新姓名與角色）</div>'; };
+    $('#st_add').onclick = async () => {
+      const staff = $('#st_paste').value.split('\n').map(parseStaffLine).filter(Boolean);
+      if (!staff.length) return toast('請貼上「員編 姓名」');
+      try { const r = await api('saveStaff',{staff}); await draw(); showPins(r.added); } catch(e){ toast(e.message); } };
+    box.querySelectorAll('[data-reset]').forEach(b=>b.onclick=async()=>{ try{ const r=await api('resetPin',{staff_id:b.dataset.reset}); showPins([r]); }catch(e){toast(e.message)} });
+    box.querySelectorAll('[data-toggle]').forEach(b=>b.onclick=async()=>{ const s=list.find(x=>x.staff_id===b.dataset.toggle);
+      try{ await api('saveStaff',{staff:[{...s,status:s.status==='停用'?'在職':'停用'}]}); toast('已更新'); draw(); }catch(e){toast(e.message)} });
+  };
+  try { await draw(); } catch(e) { box.innerHTML = `<h2>人員名單</h2><div class="muted">${esc(e.message)}</div>`; }
 }
 
 /* ===== 會議紀錄：值日生上傳錄音或貼筆記 → AI 依病房會議紀錄格式產生草稿 → 護理長核定公開 ===== */
@@ -736,10 +815,10 @@ $('#vclose').onclick=()=>{ $('#viewer').hidden=true; $('#vbody').innerHTML=''; }
 $('#vfs').onclick=()=>{ try{ document.fullscreenElement?document.exitFullscreen():$('#viewer').requestFullscreen().catch(()=>{}); }catch(_){} };
 addEventListener('keydown',e=>{ if(e.key==='Escape' && !$('#qrModal').hidden) $('#qrClose').click(); if(e.key==='Escape' && !$('#viewer').hidden && !document.fullscreenElement) $('#vclose').click(); });
 
-/* ===== 啟動：比照點班本，經 ED 帳號中心登入 ===== */
+/* ===== 啟動：簡易登入；帳號中心接好後把 CONFIG.AUTH 改成 'center' ===== */
 if (DEMO) { session = {staff_id:'00000', name:'示範帳號', role:'admin'}; render(); }
-else if (window.EDAuth) { EDAuth.init({ app:'meeting', appName:'急診會議整合資料' }).then(u => { session = u; render(); }); render(); }
-else render();
+else if (CENTER()) { EDAuth.init({ app:'meeting', appName:'急診會議整合資料' }).then(u => { session = u; render(); }); render(); }
+else { session = store.get('erm_session'); render(); }
 </script>
 </body>
 </html>
