@@ -190,6 +190,8 @@ fieldset.opts legend{padding:0 6px;font-weight:700;color:var(--fg-2)}
 .warnbar{background:var(--accent-soft)!important;color:var(--accent)!important}
 a.nextm{padding:10px 2px;border-top:1px solid var(--line);color:var(--fg);text-decoration:none}a.nextm:first-child{border-top:none}a.nextm:hover{color:var(--accent)}
 #vbody audio{width:min(640px,90%);margin:auto}
+#vbody .officeview{flex:1;overflow:auto;background:#3a3f40;padding:12px;display:flex;flex-direction:column;align-items:center;gap:12px}
+#vbody .officeview .docx-wrapper{background:#3a3f40;padding:0}
 .btn.danger{color:var(--accent);border-color:var(--accent-soft)}
 .edit-box{background:var(--bg);border-radius:12px;padding:12px 14px;margin-top:8px}
 details.mgr{margin-top:12px;border-top:1px dashed var(--line);padding-top:8px}
@@ -387,7 +389,7 @@ const M = {
     {meeting_id:'2026-08',series:'ER',date:'2026-08-27',title:'8月急診護理單位會議',status:'published',summary:'1–7月業務量與品質指標、異常事件統計、申訴與讚美、2026年度計畫與時間線、OT時數規範、自備藥與供應室宣導。'}
   ],
   attachments:[
-    {att_id:'A9',meeting_id:'2026-10',name:'（示範）年度異常事件統計.pptx',mime:'application/vnd.openxmlformats-officedocument.presentationml.presentation',kind:'附件',office:true,has_pdf:false},
+    {att_id:'A9',meeting_id:'2026-10',name:'（示範）異常事件類別統計.pptx',mime:'application/vnd.openxmlformats-officedocument.presentationml.presentation',kind:'附件',office:true,has_pdf:false,demo_url:'demo-pptx.txt'},
     {att_id:'A0',meeting_id:'2026-10',name:'（示範）雲端硬碟上的報告連結',mime:'text/uri-list',kind:'附件',url:'https://drive.google.com/file/d/1AbCdEfGhIjKlMnOp/view?usp=sharing'},
     {att_id:'A1',meeting_id:'2026-10',name:'2026年10月 會議報告',mime:'text/html',kind:'會議報告',demo_url:'reports/2026-10.html'},
     {att_id:'A2',meeting_id:'2026-10',name:'202609 急診品質指標暨業務報告.pdf',mime:'application/pdf',kind:'附件'},
@@ -463,6 +465,7 @@ async function mock(action, b){
     case 'attachPdf': { const a=M.attachments.find(x=>x.att_id===b.att_id); if(a) a.has_pdf=true; return {att_id:b.att_id,has_pdf:true}; }
     case 'deleteFile': M.attachments=M.attachments.filter(a=>a.att_id!==b.att_id); M.recs=M.recs.filter(a=>a.att_id!==b.att_id); return true;
     case 'getFile': { const a=M.attachments.find(x=>x.att_id===b.att_id); if(!a?.demo_url) throw new Error('示範模式沒有這個檔案，正式版會從雲端硬碟讀取');
+      if (a.office) return {name:a.name,mime:a.mime,base64:(await (await fetch(a.demo_url)).text()).trim()};
       return {name:a.name,mime:a.mime,text:await (await fetch(a.demo_url)).text()}; }
     case 'listDecisions': return M.decisions.map(d=>{ const m=M.meetings.find(x=>x.meeting_id===d.meeting_id)||{}; return {...d,kind:d.kind||'追蹤',scope:d.scope||'全體',meeting_title:m.title,meeting_date:m.date,series:m.series,series_name:seriesNameM(m.series)}; }).sort((a,b)=>String(b.meeting_date).localeCompare(String(a.meeting_date)));
     case 'listAnnouncements': return [...M.announcements].sort((a,b)=>((b.pinned==='yes')-(a.pinned==='yes'))||String(a.event_date).localeCompare(String(b.event_date)));
@@ -787,7 +790,7 @@ async function renderMeeting(app, id){
       ? `<form class="row" id="dateForm"><label class="f" for="md_date" style="flex-direction:row;align-items:center;gap:8px">會議日期<input id="md_date" type="date" value="${esc(/^\d{4}-\d{2}-\d{2}$/.test(m.date)?m.date:'')}" style="width:auto"></label><button class="btn" type="submit">儲存日期</button></form>`
       : `<span class="muted">會議日期 ${esc(m.date)}</span>`)}
     <div class="row"><button class="btn primary" type="button" id="mShareTop">分享這次會議</button></div>
-    ${reports.map(a=>`<div class="card report-hero"><div><div class="t">${esc(a.name)}</div><div class="muted">${a.url?'外部連結':a.office&&!a.has_pdf?'PowerPoint 原檔，目前只能下載；到下方「附件」按「上傳 PDF 版」就能線上看':a.office?'線上觀看 PDF 版，可下載原檔':'在網頁上播放，←／→ 換頁，N 鍵看講者備註'}</div></div>
+    ${reports.map(a=>`<div class="card report-hero"><div><div class="t">${esc(a.name)}</div><div class="muted">${a.url?'外部連結':a.office&&!canPreview(a)?'舊版 PowerPoint 檔，只能下載；請另存 .pptx 或 PDF 再上傳':a.has_pdf?'線上觀看 PDF 版，可下載原檔':a.office?'在網頁上預覽簡報，可下載原檔':'在網頁上播放，←／→ 換頁，N 鍵看講者備註'}</div></div>
       <button class="btn light big" type="button" data-open="${esc(a.att_id)}">▶ 觀看會議報告</button></div>`).join('')}
     <div class="card row between"><div><h2>會議現場 QR</h2><div class="muted small">投影給全場掃描：同仁用手機登入後可簽到、投票</div></div><button class="btn primary" type="button" id="liveQR">投影現場 QR</button></div>
     <div class="card stack" id="attend"><h2>出席簽到</h2><div class="muted">載入中…</div></div>
@@ -992,7 +995,7 @@ async function renderAdmin(app){
       <div class="grid2"><label class="f" for="f_m">會議<select id="f_m">${opts}</select></label>
       <label class="f" for="f_kind">類型<select id="f_kind"><option>會議報告</option><option>附件</option><option>簽到表</option><option>會議紀錄</option></select></label></div>
       <label class="f" for="f_file">檔案（網頁版報告 .html、PDF、圖片、Word／Excel／PowerPoint，25MB 以內）<input id="f_file" type="file" accept="${FILE_ACCEPT}" required></label>
-      <div class="muted small">要在網站內直接觀看，請上傳 <b>PDF</b> 或網頁版報告（.html）。PowerPoint 請先「檔案 › 另存新檔 › PDF」再上傳，中文字型才不會跑掉；也可以先傳 PPT，再到會議頁按「上傳 PDF 版」配對。要附網址請到該次會議頁的「附件」區貼上。</div>
+      <div class="muted small">PowerPoint（.pptx）、Word（.docx）、PDF、網頁版報告（.html）都能在網站內直接看。PPT 預覽偶爾和原檔略有差異（例如圖表數字標籤），要完全一樣可在會議頁「附件」幫它加傳 PDF 版。要附網址請到該次會議頁的「附件」區貼上。</div>
       <div><button class="btn primary" type="submit">上傳</button></div></form>
     <form class="card stack" id="fa"><h2>③ 發布公告</h2>
       <div class="grid2"><label class="f" for="a_cat">類別<select id="a_cat">${ANN_CATS.map(c=>`<option>${c}</option>`).join('')}</select></label>
@@ -1050,7 +1053,7 @@ async function renderAdmin(app){
     toast('已儲存會議'); location.hash = '#/m/' + m.meeting_id; });
   run('#ff', async e => { const f=$('#f_file').files[0]; if(!f) return;
     toast('上傳中…'); await uploadOne($('#f_m').value, $('#f_kind').value, f);
-    toast(/\.(pptx?|docx?|xlsx?)$/i.test(f.name) ? '已上傳。要在網站內觀看，請到該會議頁按「上傳 PDF 版」' : '已上傳 '+f.name); e.target.reset(); });
+    toast(/\.(ppt|doc|xlsx?)$/i.test(f.name) ? '已上傳。舊版 .ppt／.doc 和 Excel 只能下載，要線上看請另存 .pptx／PDF' : '已上傳 '+f.name); e.target.reset(); });
   run('#fa', async e => { const a = await api('saveAnnouncement',{announcement:{category:$('#a_cat').value,event_date:$('#a_date').value,expires:$('#a_exp').value,meeting_id:$('#a_m').value,title:$('#a_title').value,body:$('#a_body').value,pinned:$('#a_pin').checked}});
     if ($('#a_board').checked) annToBoard({...a, pinned:$('#a_pin').checked?'yes':''});
     toast('已發布公告'); e.target.reset(); });
@@ -1413,8 +1416,8 @@ function renderAtts(id, d){
   curMeet.atts = list;
   box.innerHTML = `<div class="row between"><h2>附件</h2><span class="muted small">會議紀錄引用時寫「（附件一）」</span></div>
     <div class="files">${list.map(a=>`<div class="file"><span class="att-no">${a.no}</span><span class="chip">${esc(a.kind||'附件')}</span><span class="n">${esc(a.name)}${a.url?`<br><span class="muted small">${esc(a.url)}</span>`:''}</span>
-      ${a.office?(a.has_pdf?'<span class="chip ok">可線上看</span>':'<span class="chip warn">只能下載</span>'):''}
-      ${a.office&&can?`<label class="btn sm" style="cursor:pointer">${a.has_pdf?'更換 PDF 版':'上傳 PDF 版'}<input type="file" accept="application/pdf,.pdf" hidden data-pdf="${esc(a.att_id)}"></label>`:''}
+      ${a.office?(canPreview(a)?'<span class="chip ok">可線上看</span>':'<span class="chip warn">只能下載</span>'):''}
+      ${a.office&&can?`<label class="btn sm" style="cursor:pointer" title="另存的 PDF 版面最精準；有 PDF 版時網站內優先顯示 PDF">${a.has_pdf?'更換 PDF 版':'加傳 PDF 版'}<input type="file" accept="application/pdf,.pdf" hidden data-pdf="${esc(a.att_id)}"></label>`:''}
       <button class="btn sm" type="button" data-open="${esc(a.att_id)}">開啟</button>${can && (isAdmin()||a.kind!=='會議報告')?`<button class="btn sm" type="button" data-del="${esc(a.att_id)}" aria-label="刪除 ${esc(a.name)}">刪除</button>`:''}</div>`).join('') || '<div class="empty">還沒有附件</div>'}</div>
     ${can?`<div class="addbox stack" style="gap:10px">
       <form class="grid2" id="lk" style="grid-template-columns:minmax(0,1fr) minmax(0,2fr) auto;align-items:end">
@@ -1613,6 +1616,36 @@ function linkInfo(u){
   if (/\.pdf(\?|#|$)/i.test(u)) return { embed:u, dl:u, pdf:u };
   return { embed:u };
 }
+/* ===== PPT／Word 直接在瀏覽器顯示（用同仁自己電腦的字型，中文不會變方框）===== */
+const OFFICE_LIB = {
+  pptx: ['https://cdn.jsdelivr.net/npm/pptx-preview@1.0.7/dist/pptx-preview.umd.js', 'https://unpkg.com/pptx-preview@1.0.7/dist/pptx-preview.umd.js'],
+  jszip: ['https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js', 'https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js'],
+  docx: ['https://cdn.jsdelivr.net/npm/docx-preview@0.3.6/dist/docx-preview.min.js', 'https://unpkg.com/docx-preview@0.3.6/dist/docx-preview.min.js'],
+};
+const isPptx = m => /presentationml\.presentation/.test(m||'');
+const isDocx = m => /wordprocessingml\.document/.test(m||'');
+const canPreview = a => !!(a && (a.has_pdf || isPptx(a.mime) || isDocx(a.mime)));
+async function loadFirst(urls, patch){
+  for (const u of urls) {
+    try {
+      if (patch) { const r = await fetch(u); if (!r.ok) throw 0; const url = URL.createObjectURL(new Blob([patch(await r.text())], {type:'text/javascript'})); await loadScript(url); }
+      else await loadScript(u);
+      return;
+    } catch(_) {}
+  }
+  throw new Error('預覽工具載入失敗，請檢查網路後再試');
+}
+async function renderOffice(el, buf, mime){
+  if (isPptx(mime)) {
+    if (!window.pptxPreview) await loadFirst(OFFICE_LIB.pptx, t => t.replace(/\|\|"图表标题"/g, '||""'));   // 拿掉沒有標題的圖表被自動加上的簡體「图表标题」
+    const v = pptxPreview.init(el, {width: Math.min(1100, el.clientWidth - 24)});
+    await v.preview(buf);
+  } else {
+    if (!window.JSZip) await loadFirst(OFFICE_LIB.jszip);
+    if (!window.docx) await loadFirst(OFFICE_LIB.docx);
+    await docx.renderAsync(buf, el, null, {inWrapper:true, ignoreLastRenderedPageBreak:true});
+  }
+}
 function viewerSetup(title, opts){
   const v=$('#viewer'); v.hidden=false; $('#vtitle').textContent = title;
   const set = (id, fn) => { const b=$(id); b.hidden = !fn; if (fn) b.onclick = fn; };
@@ -1642,6 +1675,14 @@ async function openFile(id){
       const blob = new Blob([bytes()],{type:f.mime});
       viewerSetup(f.name, { dl: ()=>saveBlob(blob, f.name) });
       const au = Object.assign(document.createElement('audio'), {controls:true, src:URL.createObjectURL(blob)}); body.replaceChildren(au); return;
+    }
+    if (isPptx(f.mime) || isDocx(f.mime)) {
+      const blob = new Blob([bytes()],{type:f.mime});
+      viewerSetup(f.name, { dl: ()=>saveBlob(blob, f.name), note:'網站內是預覽，版面可能和原檔略有不同（例如圖表數字標籤）；要完全一樣請下載原檔，或幫這份檔案加傳 PDF 版。' });
+      const box = document.createElement('div'); box.className = 'officeview'; box.innerHTML = '<div class="empty" style="color:#bbb">產生預覽中…</div>'; body.replaceChildren(box);
+      try { const buf = await blob.arrayBuffer(); box.innerHTML = ''; await renderOffice(box, buf, f.mime); }
+      catch(e) { box.innerHTML = `<div class="empty" style="color:#ddd">無法預覽這個檔案：${esc(e.message||'')}<br>請按「下載」用 PowerPoint／Word 開啟。</div>`; }
+      return;
     }
     if (!/^(text\/html|application\/pdf|image\/)/.test(f.mime)) { $('#viewer').hidden=true; saveBlob(new Blob([bytes()],{type:f.mime}), f.name); return toast('已下載 '+f.name+'（這份還沒有 PDF 版，所以無法在網站內觀看）'); }
     if (f.mime==='text/html'){
