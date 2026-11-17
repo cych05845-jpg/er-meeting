@@ -387,6 +387,7 @@ const M = {
     {meeting_id:'2026-08',series:'ER',date:'2026-08-27',title:'8月急診護理單位會議',status:'published',summary:'1–7月業務量與品質指標、異常事件統計、申訴與讚美、2026年度計畫與時間線、OT時數規範、自備藥與供應室宣導。'}
   ],
   attachments:[
+    {att_id:'A9',meeting_id:'2026-10',name:'（示範）年度異常事件統計.pptx',mime:'application/vnd.openxmlformats-officedocument.presentationml.presentation',kind:'附件',office:true,has_pdf:false},
     {att_id:'A0',meeting_id:'2026-10',name:'（示範）雲端硬碟上的報告連結',mime:'text/uri-list',kind:'附件',url:'https://drive.google.com/file/d/1AbCdEfGhIjKlMnOp/view?usp=sharing'},
     {att_id:'A1',meeting_id:'2026-10',name:'2026年10月 會議報告',mime:'text/html',kind:'會議報告',demo_url:'reports/2026-10.html'},
     {att_id:'A2',meeting_id:'2026-10',name:'202609 急診品質指標暨業務報告.pdf',mime:'application/pdf',kind:'附件'},
@@ -459,6 +460,7 @@ async function mock(action, b){
     case 'checkinBatch': b.people.filter(x=>x.status!=='未到').forEach(x=>M.attendance.push({key:'b'+Math.random(),meeting_id:b.meeting_id,staff_id:x.staff_id,name:x.name,title:x.unit,status:x.status,method:'簽到表照片',time:'14:00'})); return mock('listAttendance',b);
     case 'readSignSheet': return [{unit:'ER',name:'示範同仁甲',status:'出席',staff_id:'10001'},{unit:'ER',name:'示範同仁丙',status:'出席',staff_id:'10003'},{unit:'ER',name:'林?華',status:'請假',staff_id:''},{unit:'ER',name:'示範同仁丁',status:'未到',staff_id:''}];
     case 'addLink': { if(!/^https:\/\//.test(b.url)) throw new Error('請貼上 https:// 開頭的網址'); const a={att_id:'A'+Date.now(),meeting_id:b.meeting_id,name:b.name||b.url,mime:'text/uri-list',kind:'附件',url:b.url}; M.attachments.push(a); return a; }
+    case 'attachPdf': { const a=M.attachments.find(x=>x.att_id===b.att_id); if(a) a.has_pdf=true; return {att_id:b.att_id,has_pdf:true}; }
     case 'deleteFile': M.attachments=M.attachments.filter(a=>a.att_id!==b.att_id); M.recs=M.recs.filter(a=>a.att_id!==b.att_id); return true;
     case 'getFile': { const a=M.attachments.find(x=>x.att_id===b.att_id); if(!a?.demo_url) throw new Error('示範模式沒有這個檔案，正式版會從雲端硬碟讀取');
       return {name:a.name,mime:a.mime,text:await (await fetch(a.demo_url)).text()}; }
@@ -785,7 +787,7 @@ async function renderMeeting(app, id){
       ? `<form class="row" id="dateForm"><label class="f" for="md_date" style="flex-direction:row;align-items:center;gap:8px">會議日期<input id="md_date" type="date" value="${esc(/^\d{4}-\d{2}-\d{2}$/.test(m.date)?m.date:'')}" style="width:auto"></label><button class="btn" type="submit">儲存日期</button></form>`
       : `<span class="muted">會議日期 ${esc(m.date)}</span>`)}
     <div class="row"><button class="btn primary" type="button" id="mShareTop">分享這次會議</button></div>
-    ${reports.map(a=>`<div class="card report-hero"><div><div class="t">${esc(a.name)}</div><div class="muted">${a.url?'外部連結':'在網頁上播放，←／→ 換頁，N 鍵看講者備註'}</div></div>
+    ${reports.map(a=>`<div class="card report-hero"><div><div class="t">${esc(a.name)}</div><div class="muted">${a.url?'外部連結':a.office&&!a.has_pdf?'PowerPoint 原檔，目前只能下載；到下方「附件」按「上傳 PDF 版」就能線上看':a.office?'線上觀看 PDF 版，可下載原檔':'在網頁上播放，←／→ 換頁，N 鍵看講者備註'}</div></div>
       <button class="btn light big" type="button" data-open="${esc(a.att_id)}">▶ 觀看會議報告</button></div>`).join('')}
     <div class="card row between"><div><h2>會議現場 QR</h2><div class="muted small">投影給全場掃描：同仁用手機登入後可簽到、投票</div></div><button class="btn primary" type="button" id="liveQR">投影現場 QR</button></div>
     <div class="card stack" id="attend"><h2>出席簽到</h2><div class="muted">載入中…</div></div>
@@ -990,7 +992,7 @@ async function renderAdmin(app){
       <div class="grid2"><label class="f" for="f_m">會議<select id="f_m">${opts}</select></label>
       <label class="f" for="f_kind">類型<select id="f_kind"><option>會議報告</option><option>附件</option><option>簽到表</option><option>會議紀錄</option></select></label></div>
       <label class="f" for="f_file">檔案（網頁版報告 .html、PDF、圖片、Word／Excel／PowerPoint，25MB 以內）<input id="f_file" type="file" accept="${FILE_ACCEPT}" required></label>
-      <div class="muted small">要附網址（例如雲端硬碟上的報告）請到該次會議頁的「附件」區貼上。</div>
+      <div class="muted small">要在網站內直接觀看，請上傳 <b>PDF</b> 或網頁版報告（.html）。PowerPoint 請先「檔案 › 另存新檔 › PDF」再上傳，中文字型才不會跑掉；也可以先傳 PPT，再到會議頁按「上傳 PDF 版」配對。要附網址請到該次會議頁的「附件」區貼上。</div>
       <div><button class="btn primary" type="submit">上傳</button></div></form>
     <form class="card stack" id="fa"><h2>③ 發布公告</h2>
       <div class="grid2"><label class="f" for="a_cat">類別<select id="a_cat">${ANN_CATS.map(c=>`<option>${c}</option>`).join('')}</select></label>
@@ -1047,8 +1049,8 @@ async function renderAdmin(app){
   run('#fm', async () => { const m = await api('saveMeeting',{meeting:{meeting_id:$('#m_pick').value||undefined,series:$('#m_series').value,date:$('#m_date').value,title:$('#m_title').value,summary:$('#m_sum').value,status:$('#m_status').value,scribes:$('#m_scribes').value,reviewers:$('#m_rev').value,audience:$('#m_aud').value}});
     toast('已儲存會議'); location.hash = '#/m/' + m.meeting_id; });
   run('#ff', async e => { const f=$('#f_file').files[0]; if(!f) return;
-    toast(/\.(pptx?|docx?|xlsx?)$/i.test(f.name)?'上傳並轉成 PDF 中，約 10–30 秒…':'上傳中…'); const r = await uploadOne($('#f_m').value, $('#f_kind').value, f);
-    toast(r && r.pdf_error ? '已上傳，但轉 PDF 失敗（同仁只能下載原檔）：' + r.pdf_error : r && r.pdf_id ? '已上傳，並轉好 PDF 可線上觀看' : '已上傳 '+f.name); e.target.reset(); });
+    toast('上傳中…'); await uploadOne($('#f_m').value, $('#f_kind').value, f);
+    toast(/\.(pptx?|docx?|xlsx?)$/i.test(f.name) ? '已上傳。要在網站內觀看，請到該會議頁按「上傳 PDF 版」' : '已上傳 '+f.name); e.target.reset(); });
   run('#fa', async e => { const a = await api('saveAnnouncement',{announcement:{category:$('#a_cat').value,event_date:$('#a_date').value,expires:$('#a_exp').value,meeting_id:$('#a_m').value,title:$('#a_title').value,body:$('#a_body').value,pinned:$('#a_pin').checked}});
     if ($('#a_board').checked) annToBoard({...a, pinned:$('#a_pin').checked?'yes':''});
     toast('已發布公告'); e.target.reset(); });
@@ -1411,6 +1413,8 @@ function renderAtts(id, d){
   curMeet.atts = list;
   box.innerHTML = `<div class="row between"><h2>附件</h2><span class="muted small">會議紀錄引用時寫「（附件一）」</span></div>
     <div class="files">${list.map(a=>`<div class="file"><span class="att-no">${a.no}</span><span class="chip">${esc(a.kind||'附件')}</span><span class="n">${esc(a.name)}${a.url?`<br><span class="muted small">${esc(a.url)}</span>`:''}</span>
+      ${a.office?(a.has_pdf?'<span class="chip ok">可線上看</span>':'<span class="chip warn">只能下載</span>'):''}
+      ${a.office&&can?`<label class="btn sm" style="cursor:pointer">${a.has_pdf?'更換 PDF 版':'上傳 PDF 版'}<input type="file" accept="application/pdf,.pdf" hidden data-pdf="${esc(a.att_id)}"></label>`:''}
       <button class="btn sm" type="button" data-open="${esc(a.att_id)}">開啟</button>${can && (isAdmin()||a.kind!=='會議報告')?`<button class="btn sm" type="button" data-del="${esc(a.att_id)}" aria-label="刪除 ${esc(a.name)}">刪除</button>`:''}</div>`).join('') || '<div class="empty">還沒有附件</div>'}</div>
     ${can?`<div class="addbox stack" style="gap:10px">
       <form class="grid2" id="lk" style="grid-template-columns:minmax(0,1fr) minmax(0,2fr) auto;align-items:end">
@@ -1420,6 +1424,9 @@ function renderAtts(id, d){
       <form class="row" id="up"><label class="f" for="up_f" style="flex:1">或上傳檔案（PDF、圖片、Word／Excel／PowerPoint，25MB 以內）<input id="up_f" type="file" accept="${FILE_ACCEPT}" required></label><button class="btn" type="submit">上傳附件</button></form>
       <div class="muted small">雲端硬碟的網址請確認同仁有權限開啟（建議分享給院內帳號，不要開「知道連結的任何人」）。</div></div>`:''}`;
   box.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>openFile(b.dataset.open));
+  box.querySelectorAll('[data-pdf]').forEach(inp=>inp.onchange=async()=>{ const f=inp.files[0]; if(!f) return;
+    if (!/\.pdf$/i.test(f.name)) return toast('請選 PDF 檔');
+    try{ toast('上傳 PDF 版中…'); await api('attachPdf',{att_id:inp.dataset.pdf, mime:'application/pdf', base64: await fileB64(f)}); qcache.forEach((v,k)=>{ if(k.startsWith('getFile|')) qcache.delete(k); }); toast('已配對 PDF 版，可在網站內觀看'); refresh(); }catch(e){ toast(e.message); } });
   const refresh = async () => { const nd = await api('getMeeting',{meeting_id:id}); curMeet.d = nd; renderAtts(id, nd); };
   box.querySelectorAll('[data-del]').forEach(b=>b.onclick=async()=>{ if(!confirm('確定刪除這個附件？')) return; try{ await api('deleteFile',{att_id:b.dataset.del}); toast('已刪除'); refresh(); }catch(e){toast(e.message)} });
   const lk = $('#lk'); if (lk) lk.onsubmit = async e => { e.preventDefault(); try{ await api('addLink',{meeting_id:id,name:$('#lk_n').value.trim(),url:$('#lk_u').value.trim()}); toast('已加入附件'); refresh(); }catch(err){toast(err.message)} };
@@ -1624,7 +1631,7 @@ async function openFile(id){
     fr.setAttribute('referrerpolicy','no-referrer'); body.replaceChildren(fr); return;
   }
   viewerSetup(att?.name || '載入中…', {});
-  body.innerHTML=`<div class="empty" style="color:#bbb;flex:1">載入中…（第一次開啟較久${/\.(pptx?|docx?|xlsx?)$/i.test(att?.name||'')?'，PowerPoint／Word 第一次要轉成 PDF，約 10–30 秒':''}）</div>`;
+  body.innerHTML='<div class="empty" style="color:#bbb;flex:1">載入中…（第一次開啟較久，之後 10 分鐘內會很快）</div>';
   try{
     const f = await api('getFile',{att_id:id});
     if (f.url) { $('#viewer').hidden=true; return window.open(f.url,'_blank','noopener'); }
@@ -1636,7 +1643,7 @@ async function openFile(id){
       viewerSetup(f.name, { dl: ()=>saveBlob(blob, f.name) });
       const au = Object.assign(document.createElement('audio'), {controls:true, src:URL.createObjectURL(blob)}); body.replaceChildren(au); return;
     }
-    if (!/^(text\/html|application\/pdf|image\/)/.test(f.mime)) { $('#viewer').hidden=true; saveBlob(new Blob([bytes()],{type:f.mime}), f.name); return toast('已下載 '+f.name+'（這個檔案無法轉成 PDF，只能下載）'); }
+    if (!/^(text\/html|application\/pdf|image\/)/.test(f.mime)) { $('#viewer').hidden=true; saveBlob(new Blob([bytes()],{type:f.mime}), f.name); return toast('已下載 '+f.name+'（這份還沒有 PDF 版，所以無法在網站內觀看）'); }
     if (f.mime==='text/html'){
       viewerSetup(f.name, { dl: ()=>saveBlob(new Blob([html],{type:'text/html'}), f.name.replace(/\.html?$/i,'')+'.html'), pdf: ()=>printDoc(html, REPORT_PRINT_CSS) });
       const fr=document.createElement('iframe'); fr.setAttribute('sandbox','allow-scripts'); fr.setAttribute('allow','fullscreen'); fr.setAttribute('allowfullscreen',''); fr.title=f.name; fr.srcdoc=html; body.replaceChildren(fr); setTimeout(()=>fr.focus(),300);
@@ -1645,7 +1652,7 @@ async function openFile(id){
       const isImg = f.mime.startsWith('image/');
       const dlOrig = f.converted ? async () => { try { toast('下載原檔中…'); const o = await api('getFile',{att_id:id, original:true}); saveBlob(new Blob([Uint8Array.from(atob(o.base64),c=>c.charCodeAt(0))],{type:o.mime}), o.name); } catch(e){ toast(e.message); } } : ()=>saveBlob(blob, f.name);
       viewerSetup(f.name, { dl: dlOrig, pdf: isImg ? ()=>printDoc(`<img src="data:${f.mime};base64,${f.base64}" style="max-width:100%">`, '@page{margin:10mm}') : ()=>saveBlob(blob, /\.pdf$/i.test(f.name)?f.name:f.name+'.pdf'),
-        note: f.converted ? `原檔是 ${f.orig_name}，網站內顯示自動轉好的 PDF；按「下載」可取得原檔。` : '' });
+        note: f.converted ? `原檔是 ${f.orig_name}，網站內顯示的是 PDF 版；按「下載」可取得原檔。` : '' });
       const el = isImg ? Object.assign(document.createElement('img'),{src:url,alt:f.name}) : Object.assign(document.createElement('iframe'),{src:url,title:f.name});
       body.replaceChildren(el);
     }
