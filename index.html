@@ -1047,7 +1047,8 @@ async function renderAdmin(app){
   run('#fm', async () => { const m = await api('saveMeeting',{meeting:{meeting_id:$('#m_pick').value||undefined,series:$('#m_series').value,date:$('#m_date').value,title:$('#m_title').value,summary:$('#m_sum').value,status:$('#m_status').value,scribes:$('#m_scribes').value,reviewers:$('#m_rev').value,audience:$('#m_aud').value}});
     toast('已儲存會議'); location.hash = '#/m/' + m.meeting_id; });
   run('#ff', async e => { const f=$('#f_file').files[0]; if(!f) return;
-    toast('上傳中…'); await uploadOne($('#f_m').value, $('#f_kind').value, f); toast('已上傳 '+f.name); e.target.reset(); });
+    toast(/\.(pptx?|docx?|xlsx?)$/i.test(f.name)?'上傳並轉成 PDF 中，約 10–30 秒…':'上傳中…'); const r = await uploadOne($('#f_m').value, $('#f_kind').value, f);
+    toast(r && r.pdf_error ? '已上傳，但轉 PDF 失敗（同仁只能下載原檔）：' + r.pdf_error : r && r.pdf_id ? '已上傳，並轉好 PDF 可線上觀看' : '已上傳 '+f.name); e.target.reset(); });
   run('#fa', async e => { const a = await api('saveAnnouncement',{announcement:{category:$('#a_cat').value,event_date:$('#a_date').value,expires:$('#a_exp').value,meeting_id:$('#a_m').value,title:$('#a_title').value,body:$('#a_body').value,pinned:$('#a_pin').checked}});
     if ($('#a_board').checked) annToBoard({...a, pinned:$('#a_pin').checked?'yes':''});
     toast('已發布公告'); e.target.reset(); });
@@ -1623,7 +1624,7 @@ async function openFile(id){
     fr.setAttribute('referrerpolicy','no-referrer'); body.replaceChildren(fr); return;
   }
   viewerSetup(att?.name || '載入中…', {});
-  body.innerHTML='<div class="empty" style="color:#bbb;flex:1">載入中…（第一次開啟較久，之後 10 分鐘內會很快）</div>';
+  body.innerHTML=`<div class="empty" style="color:#bbb;flex:1">載入中…（第一次開啟較久${/\.(pptx?|docx?|xlsx?)$/i.test(att?.name||'')?'，PowerPoint／Word 第一次要轉成 PDF，約 10–30 秒':''}）</div>`;
   try{
     const f = await api('getFile',{att_id:id});
     if (f.url) { $('#viewer').hidden=true; return window.open(f.url,'_blank','noopener'); }
@@ -1635,14 +1636,16 @@ async function openFile(id){
       viewerSetup(f.name, { dl: ()=>saveBlob(blob, f.name) });
       const au = Object.assign(document.createElement('audio'), {controls:true, src:URL.createObjectURL(blob)}); body.replaceChildren(au); return;
     }
-    if (!/^(text\/html|application\/pdf|image\/)/.test(f.mime)) { $('#viewer').hidden=true; saveBlob(new Blob([bytes()],{type:f.mime}), f.name); return toast('已下載 '+f.name+'（Word／PPT 請另存 PDF 上傳，就能在網站內直接看）'); }
+    if (!/^(text\/html|application\/pdf|image\/)/.test(f.mime)) { $('#viewer').hidden=true; saveBlob(new Blob([bytes()],{type:f.mime}), f.name); return toast('已下載 '+f.name+'（這個檔案無法轉成 PDF，只能下載）'); }
     if (f.mime==='text/html'){
       viewerSetup(f.name, { dl: ()=>saveBlob(new Blob([html],{type:'text/html'}), f.name.replace(/\.html?$/i,'')+'.html'), pdf: ()=>printDoc(html, REPORT_PRINT_CSS) });
       const fr=document.createElement('iframe'); fr.setAttribute('sandbox','allow-scripts'); fr.setAttribute('allow','fullscreen'); fr.setAttribute('allowfullscreen',''); fr.title=f.name; fr.srcdoc=html; body.replaceChildren(fr); setTimeout(()=>fr.focus(),300);
     } else {
       const blob = new Blob([bytes()],{type:f.mime}); const url = URL.createObjectURL(blob);
       const isImg = f.mime.startsWith('image/');
-      viewerSetup(f.name, { dl: ()=>saveBlob(blob, f.name), pdf: isImg ? ()=>printDoc(`<img src="data:${f.mime};base64,${f.base64}" style="max-width:100%">`, '@page{margin:10mm}') : ()=>saveBlob(blob, /\.pdf$/i.test(f.name)?f.name:f.name+'.pdf') });
+      const dlOrig = f.converted ? async () => { try { toast('下載原檔中…'); const o = await api('getFile',{att_id:id, original:true}); saveBlob(new Blob([Uint8Array.from(atob(o.base64),c=>c.charCodeAt(0))],{type:o.mime}), o.name); } catch(e){ toast(e.message); } } : ()=>saveBlob(blob, f.name);
+      viewerSetup(f.name, { dl: dlOrig, pdf: isImg ? ()=>printDoc(`<img src="data:${f.mime};base64,${f.base64}" style="max-width:100%">`, '@page{margin:10mm}') : ()=>saveBlob(blob, /\.pdf$/i.test(f.name)?f.name:f.name+'.pdf'),
+        note: f.converted ? `原檔是 ${f.orig_name}，網站內顯示自動轉好的 PDF；按「下載」可取得原檔。` : '' });
       const el = isImg ? Object.assign(document.createElement('img'),{src:url,alt:f.name}) : Object.assign(document.createElement('iframe'),{src:url,title:f.name});
       body.replaceChildren(el);
     }
